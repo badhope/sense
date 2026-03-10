@@ -69,6 +69,8 @@ class UIManager {
 
     restartGame() {
         document.getElementById('game-over-modal').classList.remove('active');
+        document.getElementById('story-modal')?.classList.remove('active');
+        document.getElementById('event-modal')?.classList.remove('active');
         window.game.reset();
         this.showScreen('pathogenSelect');
         this.selectedPathogen = null;
@@ -400,19 +402,98 @@ class UIManager {
         }
     }
 
-    showGameOver(isVictory, stats) {
+    showPathogenStory(story) {
+        let modal = document.getElementById('story-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'story-modal';
+            modal.className = 'modal';
+            document.body.appendChild(modal);
+        }
+
+        modal.innerHTML = `
+            <div class="modal-content story-modal">
+                <button class="modal-close" onclick="this.parentElement.parentElement.classList.remove('active')">×</button>
+                <h2 class="story-title">${story.title}</h2>
+                <p class="story-intro">${story.description}</p>
+                <div class="story-backdrop">
+                    <h3>起源</h3>
+                    <p>${story.backstory}</p>
+                </div>
+                <div class="story-characteristics">
+                    <h3>特性</h3>
+                    <ul>
+                        ${story.characteristics.map(c => `<li>${c}</li>`).join('')}
+                    </ul>
+                </div>
+                <div class="story-strategy">
+                    <h3>策略提示</h3>
+                    <p>${story.strategy}</p>
+                </div>
+                <button class="btn-primary" onclick="document.getElementById('story-modal').classList.remove('active')">开始游戏</button>
+            </div>
+        `;
+
+        modal.classList.add('active');
+    }
+
+    showCountryEvent(countryName, eventType, message) {
+        let modal = document.getElementById('event-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'event-modal';
+            modal.className = 'modal';
+            document.body.appendChild(modal);
+        }
+
+        const titles = {
+            'firstReport': '📢 首次报告',
+            'lockdown': '🔒 封城措施',
+            'crisis': '⚠️ 危机升级',
+            'collapse': '💀 国家沦陷'
+        };
+
+        modal.innerHTML = `
+            <div class="modal-content event-modal">
+                <button class="modal-close" onclick="this.parentElement.parentElement.classList.remove('active')">×</button>
+                <h2 class="event-title">${titles[eventType] || '事件'}</h2>
+                <h3 class="event-country">${countryName}</h3>
+                <p class="event-message">${message}</p>
+                <button class="btn-primary" onclick="document.getElementById('event-modal').classList.remove('active')">继续</button>
+            </div>
+        `;
+
+        modal.classList.add('active');
+
+        setTimeout(() => {
+            modal.classList.remove('active');
+        }, 5000);
+    }
+
+    showGameOver(isVictory, stats, ending = null) {
         const modal = document.getElementById('game-over-modal');
         const title = document.getElementById('modal-title');
         const message = document.getElementById('modal-message');
 
-        if (isVictory) {
-            title.textContent = '🏆 世界已被征服！';
-            title.className = 'victory';
-            message.textContent = '恭喜！你成功让病原体感染了全世界的每一个人类！';
+        if (ending) {
+            title.textContent = ending.title;
+            message.innerHTML = `${ending.message}<br><br><em>${ending.epilogue}</em>`;
+            
+            if (isVictory) {
+                title.className = 'victory';
+            } else {
+                title.className = 'defeat';
+            }
         } else {
-            title.textContent = '💀 人类获胜';
-            title.className = 'defeat';
-            message.textContent = '很遗憾，人类成功研发出疫苗并治愈了所有人...';
+            if (isVictory) {
+                title.textContent = '🏆 世界已被征服！';
+                title.className = 'victory';
+                message.textContent = '恭喜！你成功让病原体感染了全世界的每一个人类！';
+            } else {
+                title.textContent = '💀 人类获胜';
+                title.className = 'defeat';
+                message.textContent = '很遗憾，人类成功研发出疫苗并治愈了所有人...';
+            }
         }
 
         document.getElementById('final-countries').textContent = stats.countries;

@@ -10,6 +10,8 @@ class Game {
         this.dnaPerTurn = 1;
         this.eventLog = [];
         this.intervalId = null;
+        this.storyManager = new StoryManager();
+        this.newsScrollInterval = null;
     }
 
     init(pathogenType) {
@@ -34,11 +36,16 @@ class Game {
         this.ui.renderAbilitiesList(this.pathogen);
         this.ui.renderWorldMap(this.countries);
         
+        const pathogenStory = this.storyManager.getPathogenStory(pathogenType);
+        this.ui.showPathogenStory(pathogenStory);
+        
+        this.startNewsScroll();
         this.startGameLoop();
     }
 
     reset() {
         this.stopGameLoop();
+        this.stopNewsScroll();
         this.pathogen = null;
         this.countries = [];
         this.turn = 0;
@@ -77,6 +84,38 @@ class Game {
         const pauseBtn = document.getElementById('pause-btn');
         if (pauseBtn) {
             pauseBtn.textContent = this.isPaused ? '▶️ 继续' : '⏸️ 暂停';
+        }
+    }
+
+    startNewsScroll() {
+        this.updateNewsHeadline();
+        this.newsScrollInterval = setInterval(() => {
+            this.updateNewsHeadline();
+        }, 5000);
+    }
+
+    stopNewsScroll() {
+        if (this.newsScrollInterval) {
+            clearInterval(this.newsScrollInterval);
+            this.newsScrollInterval = null;
+        }
+    }
+
+    updateNewsHeadline() {
+        const totalInfected = CountryManager.getTotalInfected();
+        const totalPop = CountryManager.getTotalPopulation();
+        const infectedRatio = totalPop > 0 ? totalInfected / totalPop : 0;
+        
+        const isPanic = infectedRatio > 0.1 || this.turn > 20;
+        const headline = this.storyManager.getNewsHeadline(isPanic);
+        
+        const headlineEl = document.getElementById('news-headline');
+        if (headlineEl) {
+            headlineEl.style.opacity = 0;
+            setTimeout(() => {
+                headlineEl.textContent = headline;
+                headlineEl.style.opacity = 1;
+            }, 300);
         }
     }
 
@@ -137,7 +176,17 @@ class Game {
                 if (country.infected >= country.population) {
                     country.infected = country.population;
                     country.status = 'collapsed';
-                    this.ui.addEventLog(`🚨 ${country.name} 已沦陷！`, 'danger');
+                    
+                    const countryStory = this.storyManager.getCountryStory(country.id);
+                    const message = countryStory ? 
+                        this.storyManager.getEventMessage('country', 'collapse', country.name) :
+                        `${country.name} 已经沦陷！`;
+                    
+                    this.ui.addEventLog(`🚨 ${message}`, 'danger');
+                    
+                    if (countryStory && countryStory.collapse) {
+                        this.ui.showCountryEvent(country.name, 'collapse', countryStory.collapse);
+                    }
                 } else if (country.infected > country.population * 0.5) {
                     country.status = 'infected';
                 }
@@ -159,7 +208,16 @@ class Game {
                         targetCountry.infected = initialInfect;
                         targetCountry.status = 'infected';
                         
-                        this.ui.addEventLog(`🦠 ${targetCountry.name} 出现首例感染！`, 'warning');
+                        const countryStory = this.storyManager.getCountryStory(targetCountry.id);
+                        const message = countryStory ?
+                            this.storyManager.getEventMessage('country', 'infection', targetCountry.name) :
+                            `${targetCountry.name} 出现首例感染！`;
+                        
+                        this.ui.addEventLog(`🦠 ${message}`, 'warning');
+                        
+                        if (countryStory && countryStory.firstReport) {
+                            this.ui.showCountryEvent(targetCountry.name, 'firstReport', countryStory.firstReport);
+                        }
                     }
                 }
             });
@@ -198,6 +256,9 @@ class Game {
         if (infected === 0 && this.turn > 5) {
             this.isRunning = false;
             this.stopGameLoop();
+            this.stopNewsScroll();
+            
+            const ending = this.storyManager.getEnding('defeat');
             
             const stats = {
                 countries: this.countries.filter(c => c.status !== 'healthy').length,
@@ -205,14 +266,20 @@ class Game {
                 turns: this.turn
             };
             
-            this.ui.showGameOver(false, stats);
+            this.ui.showGameOver(false, stats, ending);
             return;
         }
         
         const deadRatio = dead / totalPop;
-        if (deadRatio >= 0.99) {
+        const infectedRatio = infected / totalPop;
+        
+        if (deadRatio >= 0.99 || infectedRatio >= 0.99) {
             this.isRunning = false;
             this.stopGameLoop();
+            this.stopNewsScroll();
+            
+            const endingType = this.storyManager.calculateVictoryType(deadRatio, infectedRatio, this.turn);
+            const ending = this.storyManager.getEnding(endingType);
             
             const stats = {
                 countries: this.countries.length,
@@ -220,7 +287,7 @@ class Game {
                 turns: this.turn
             };
             
-            this.ui.showGameOver(true, stats);
+            this.ui.showGameOver(true, stats, ending);
             return;
         }
 
@@ -228,6 +295,9 @@ class Game {
         if (collapsedCountries >= this.countries.length * 0.95) {
             this.isRunning = false;
             this.stopGameLoop();
+            this.stopNewsScroll();
+            
+            const ending = this.storyManager.getEnding('total_victory');
             
             const stats = {
                 countries: collapsedCountries,
@@ -235,7 +305,7 @@ class Game {
                 turns: this.turn
             };
             
-            this.ui.showGameOver(true, stats);
+            this.ui.showGameOver(true, stats, ending);
         }
     }
 
@@ -248,11 +318,43 @@ class Game {
         this.ui.updateStats(this);
         this.ui.updateInfectionRate(infected / total);
         this.ui.updateWorldMap(this.countries);
+        
+        this.updateSpecialEvents();
+    }
+
+    updateSpecialEvents() {
+        const infected = CountryManager.getTotalInfected();
+        const total = CountryManager.getTotalPopulation();
+        const infectedRatio = infected / total;
+        
+        if (this.turn === 5 && infectedRatio > 0) {
+            this.ui.addEventLog("📢 世界卫生组织召开紧急会议...", 'info');
+        }
+        
+        if (this.turn === 10 && infectedRatio > 0.01) {
+            this.ui.addEventLog("📢 全球大流行预警！", 'warning');
+            const message = this.storyManager.getEventMessage('world', 'pandemic');
+            this.ui.addEventLog(message, 'warning');
+        }
+        
+        if (this.turn === 20 && infectedRatio > 0.1) {
+            this.ui.addEventLog("📢 多国开始实施封城措施", 'danger');
+        }
+        
+        if (this.turn === 50 && infectedRatio > 0.3) {
+            const message = this.storyManager.getEventMessage('world', 'vaccine');
+            this.ui.addEventLog(message, 'warning');
+        }
     }
 
     buyTransmission(type) {
         if (this.pathogen.buyTransmission(type)) {
             this.ui.renderTransmissionList(this.pathogen);
+            
+            const message = this.storyManager.getEventMessage('transmission', type);
+            if (message) {
+                this.ui.addEventLog(`🧬 ${message}`, 'info');
+            }
             return true;
         }
         return false;
@@ -262,6 +364,11 @@ class Game {
         if (this.pathogen.buySymptom(symptom)) {
             this.ui.renderSymptomsList(this.pathogen);
             this.ui.renderAbilitiesList(this.pathogen);
+            
+            const message = this.storyManager.getEventMessage('symptom', symptom);
+            if (message) {
+                this.ui.addEventLog(`🤒 ${message}`, 'warning');
+            }
             return true;
         }
         return false;
@@ -270,6 +377,11 @@ class Game {
     buyAbility(ability) {
         if (this.pathogen.buyAbility(ability)) {
             this.ui.renderAbilitiesList(this.pathogen);
+            
+            const message = this.storyManager.getEventMessage('ability', ability);
+            if (message) {
+                this.ui.addEventLog(`✨ ${message}`, 'info');
+            }
             return true;
         }
         return false;
