@@ -1,5 +1,11 @@
 class UIManager {
     constructor() {
+        this.screens = {};
+        this.selectedPathogen = null;
+        this.initialized = false;
+    }
+
+    init() {
         this.screens = {
             start: document.getElementById('start-screen'),
             pathogenSelect: document.getElementById('pathogen-select'),
@@ -8,6 +14,7 @@ class UIManager {
         
         this.selectedPathogen = null;
         this.initEventListeners();
+        this.initialized = true;
     }
 
     initEventListeners() {

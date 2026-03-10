@@ -285,6 +285,7 @@ class Game {
 
 window.addEventListener('DOMContentLoaded', () => {
     window.game = new Game();
+    window.game.ui.init();
 });
 
 if (typeof module !== 'undefined' && module.exports) {
