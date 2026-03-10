@@ -1,0 +1,398 @@
+class UIManager {
+    constructor() {
+        this.screens = {
+            start: document.getElementById('start-screen'),
+            pathogenSelect: document.getElementById('pathogen-select'),
+            game: document.getElementById('game-screen')
+        };
+        
+        this.selectedPathogen = null;
+        this.initEventListeners();
+    }
+
+    initEventListeners() {
+        const startBtn = document.getElementById('start-btn');
+        startBtn.addEventListener('click', () => this.showScreen('pathogenSelect'));
+
+        const pathogenCards = document.querySelectorAll('.pathogen-card');
+        pathogenCards.forEach(card => {
+            card.addEventListener('click', () => this.selectPathogen(card));
+        });
+
+        const confirmBtn = document.getElementById('confirm-pathogen');
+        confirmBtn.addEventListener('click', () => {
+            if (this.selectedPathogen) {
+                this.startGame(this.selectedPathogen);
+            }
+        });
+
+        const restartBtn = document.getElementById('restart-btn');
+        restartBtn.addEventListener('click', () => this.restartGame());
+
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+        });
+    }
+
+    showScreen(screenName) {
+        Object.values(this.screens).forEach(screen => {
+            screen.classList.remove('active');
+        });
+        this.screens[screenName].classList.add('active');
+    }
+
+    selectPathogen(card) {
+        document.querySelectorAll('.pathogen-card').forEach(c => {
+            c.classList.remove('selected');
+        });
+        card.classList.add('selected');
+        this.selectedPathogen = card.dataset.type;
+        
+        const confirmBtn = document.getElementById('confirm-pathogen');
+        confirmBtn.disabled = false;
+    }
+
+    startGame(pathogenType) {
+        this.showScreen('game');
+        if (window.game) {
+            window.game.init(pathogenType);
+        }
+    }
+
+    restartGame() {
+        document.getElementById('game-over-modal').classList.remove('active');
+        window.game.reset();
+        this.showScreen('pathogenSelect');
+        this.selectedPathogen = null;
+        document.querySelectorAll('.pathogen-card').forEach(c => {
+            c.classList.remove('selected');
+        });
+        document.getElementById('confirm-pathogen').disabled = true;
+    }
+
+    switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.tab === tabName) {
+                btn.classList.add('active');
+            }
+        });
+
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+    }
+
+    updatePathogenInfo(pathogen) {
+        document.getElementById('pathogen-name').textContent = pathogen.name;
+        document.getElementById('pathogen-type').textContent = pathogen.type;
+    }
+
+    updateDNA(dna) {
+        const dnaEl = document.getElementById('dna-value');
+        dnaEl.textContent = dna;
+        dnaEl.style.transform = 'scale(1.2)';
+        setTimeout(() => {
+            dnaEl.style.transform = 'scale(1)';
+        }, 200);
+    }
+
+    updateInfectionRate(rate) {
+        const percent = Math.floor(rate * 100);
+        document.getElementById('infection-percent').textContent = `${percent}%`;
+        document.getElementById('infection-fill').style.width = `${percent}%`;
+    }
+
+    updateStats(game) {
+        const totalPop = CountryManager.getTotalPopulation();
+        const infected = CountryManager.getTotalInfected();
+        const dead = CountryManager.getTotalDead();
+        
+        document.getElementById('total-population').textContent = this.formatNumber(totalPop);
+        document.getElementById('infected-count').textContent = this.formatNumber(infected);
+        document.getElementById('dead-count').textContent = this.formatNumber(dead);
+        document.getElementById('cure-rate').textContent = `${Math.floor(game.cureRate * 100)}%`;
+    }
+
+    renderTransmissionList(pathogen) {
+        const container = document.getElementById('transmission-list');
+        container.innerHTML = '';
+
+        for (const [type, config] of Object.entries(TRANSMISSIONS)) {
+            const currentLevel = pathogen.transmissions[type] || 0;
+            const cost = pathogen.getTransmissionCost(type);
+            const canBuy = pathogen.dna >= cost && pathogen.canBuyTransmission(type);
+            const isMaxed = currentLevel >= config.maxLevel;
+            const isOwned = currentLevel > 0;
+
+            const item = document.createElement('div');
+            item.className = `upgrade-item ${!canBuy && !isMaxed ? 'disabled' : ''} ${isMaxed ? 'maxed' : ''} ${isOwned ? 'owned' : ''}`;
+            
+            let levelDots = '';
+            for (let i = 0; i < config.maxLevel; i++) {
+                levelDots += `<span class="level-dot ${i < currentLevel ? 'filled' : ''}"></span>`;
+            }
+
+            item.innerHTML = `
+                <div class="upgrade-header">
+                    <span class="upgrade-name">${config.name}</span>
+                    <span class="upgrade-cost">${isMaxed ? 'MAX' : cost + ' DNA'}</span>
+                </div>
+                <div class="upgrade-desc">${config.desc}</div>
+                <div class="upgrade-level">${levelDots}</div>
+            `;
+
+            if (canBuy) {
+                item.addEventListener('click', () => {
+                    if (window.game.buyTransmission(type)) {
+                        this.renderTransmissionList(window.game.pathogen);
+                        this.updateDNA(window.game.pathogen.dna);
+                    }
+                });
+            }
+
+            container.appendChild(item);
+        }
+    }
+
+    renderSymptomsList(pathogen) {
+        const container = document.getElementById('symptoms-list');
+        container.innerHTML = '';
+
+        for (const [symptom, config] of Object.entries(SYMPTOMS)) {
+            const owned = !!pathogen.symptoms[symptom];
+            const canBuy = pathogen.dna >= config.cost && pathogen.canBuySymptom(symptom);
+            const locked = !owned && !canBuy && pathogen.dna < config.cost;
+            const requiredText = config.requiredTransmissions > 0 ? 
+                `需要 ${config.requiredTransmissions} 个传播途径` : '';
+
+            const item = document.createElement('div');
+            item.className = `upgrade-item ${owned ? 'owned' : ''} ${!canBuy && !owned ? 'disabled' : ''}`;
+            
+            item.innerHTML = `
+                <div class="upgrade-header">
+                    <span class="upgrade-name">${config.name}</span>
+                    <span class="upgrade-cost">${owned ? '已解锁' : config.cost + ' DNA'}</span>
+                </div>
+                <div class="upgrade-desc">${config.desc}</div>
+                ${requiredText ? `<div class="upgrade-desc" style="color: var(--accent-red); font-size: 0.75rem;">🔒 ${requiredText}</div>` : ''}
+            `;
+
+            if (canBuy) {
+                item.addEventListener('click', () => {
+                    if (window.game.buySymptom(symptom)) {
+                        this.renderSymptomsList(window.game.pathogen);
+                        this.renderAbilitiesList(window.game.pathogen);
+                        this.updateDNA(window.game.pathogen.dna);
+                    }
+                });
+            }
+
+            container.appendChild(item);
+        }
+    }
+
+    renderAbilitiesList(pathogen) {
+        const container = document.getElementById('abilities-list');
+        container.innerHTML = '';
+
+        for (const [ability, config] of Object.entries(ABILITIES)) {
+            const owned = pathogen.abilities.includes(ability);
+            const canBuy = pathogen.dna >= config.cost && pathogen.canBuyAbility(ability);
+            const locked = !owned && !canBuy && pathogen.dna < config.cost;
+            const requiredText = config.requiredTransmissions > 0 ? 
+                `需要 ${config.requiredTransmissions} 个传播途径` : '';
+
+            const item = document.createElement('div');
+            item.className = `upgrade-item ${owned ? 'owned' : ''} ${!canBuy && !owned ? 'disabled' : ''}`;
+            
+            item.innerHTML = `
+                <div class="upgrade-header">
+                    <span class="upgrade-name">${config.name}</span>
+                    <span class="upgrade-cost">${owned ? '已解锁' : config.cost + ' DNA'}</span>
+                </div>
+                <div class="upgrade-desc">${config.desc}</div>
+                ${requiredText ? `<div class="upgrade-desc" style="color: var(--accent-red); font-size: 0.75rem;">🔒 ${requiredText}</div>` : ''}
+            `;
+
+            if (canBuy) {
+                item.addEventListener('click', () => {
+                    if (window.game.buyAbility(ability)) {
+                        this.renderAbilitiesList(window.game.pathogen);
+                        this.updateDNA(window.game.pathogen.dna);
+                    }
+                });
+            }
+
+            container.appendChild(item);
+        }
+    }
+
+    renderWorldMap(countries) {
+        const svg = document.getElementById('world-map');
+        svg.innerHTML = '';
+
+        countries.forEach(country => {
+            const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            group.setAttribute('class', 'country');
+            group.setAttribute('data-id', country.id);
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', country.x);
+            circle.setAttribute('cy', country.y);
+            circle.setAttribute('r', this.getCountryRadius(country.population));
+            circle.setAttribute('class', this.getCountryClass(country.status));
+
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', country.x);
+            label.setAttribute('y', country.y + 4);
+            label.setAttribute('text-anchor', 'middle');
+            label.setAttribute('fill', country.status === 'healthy' ? '#7a8ba3' : '#fff');
+            label.setAttribute('font-size', '10');
+            label.textContent = country.name.substring(0, 2);
+
+            group.appendChild(circle);
+            group.appendChild(label);
+
+            group.addEventListener('mouseenter', () => this.showCountryTooltip(country));
+            group.addEventListener('mouseleave', () => this.hideCountryTooltip());
+
+            svg.appendChild(group);
+        });
+    }
+
+    updateWorldMap(countries) {
+        countries.forEach(country => {
+            const group = document.querySelector(`.country[data-id="${country.id}"]`);
+            if (group) {
+                const circle = group.querySelector('circle');
+                circle.setAttribute('class', this.getCountryClass(country.status));
+            }
+        });
+    }
+
+    getCountryRadius(population) {
+        const minR = 8;
+        const maxR = 30;
+        const minPop = 25000000;
+        const maxPop = 1400000000;
+        
+        const normalized = (population - minPop) / (maxPop - minPop);
+        return minR + normalized * (maxR - minR);
+    }
+
+    getCountryClass(status) {
+        switch (status) {
+            case 'healthy': return 'country-healthy';
+            case 'infected': return 'country-infected';
+            case 'collapsed': return 'country-collapsed';
+            case 'quarantined': return 'country-infected';
+            default: return 'country-healthy';
+        }
+    }
+
+    showCountryTooltip(country) {
+        let tooltip = document.getElementById('country-tooltip');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.id = 'country-tooltip';
+            tooltip.style.cssText = `
+                position: fixed;
+                background: rgba(26, 36, 54, 0.95);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 10px 15px;
+                font-size: 0.85rem;
+                pointer-events: none;
+                z-index: 1000;
+                backdrop-filter: blur(10px);
+            `;
+            document.body.appendChild(tooltip);
+        }
+
+        const infectedPercent = country.infectedRate > 0 ? 
+            `${(country.infectedRate * 100).toFixed(1)}%` : '0%';
+        const deadPercent = country.deadRate > 0 ? 
+            `${(country.deadRate * 100).toFixed(1)}%` : '0%';
+
+        tooltip.innerHTML = `
+            <div style="font-weight: 600; margin-bottom: 5px; color: var(--accent-green);">${country.name}</div>
+            <div>人口: ${this.formatNumber(country.population)}</div>
+            <div>感染: ${infectedPercent}</div>
+            <div>死亡: ${deadPercent}</div>
+            <div>状态: ${this.getStatusText(country.status)}</div>
+            <div>防控: ${country.defense}%</div>
+        `;
+
+        tooltip.style.display = 'block';
+    }
+
+    hideCountryTooltip() {
+        const tooltip = document.getElementById('country-tooltip');
+        if (tooltip) {
+            tooltip.style.display = 'none';
+        }
+    }
+
+    getStatusText(status) {
+        const statusMap = {
+            'healthy': '未感染',
+            'infected': '感染中',
+            'collapsed': '沦陷',
+            'quarantined': '隔离中'
+        };
+        return statusMap[status] || status;
+    }
+
+    addEventLog(message, type = 'info') {
+        const container = document.getElementById('event-log');
+        const event = document.createElement('div');
+        event.className = `event-item ${type}`;
+        event.textContent = message;
+        
+        container.insertBefore(event, container.firstChild);
+
+        if (container.children.length > 5) {
+            container.removeChild(container.lastChild);
+        }
+    }
+
+    showGameOver(isVictory, stats) {
+        const modal = document.getElementById('game-over-modal');
+        const title = document.getElementById('modal-title');
+        const message = document.getElementById('modal-message');
+
+        if (isVictory) {
+            title.textContent = '世界已被征服！';
+            title.className = 'victory';
+            message.textContent = '恭喜！你成功让病原体感染了全世界的每一个人类！';
+        } else {
+            title.textContent = '人类获胜';
+            title.className = 'defeat';
+            message.textContent = '很遗憾，人类成功研发出疫苗并治愈了所有人...';
+        }
+
+        document.getElementById('final-countries').textContent = stats.countries;
+        document.getElementById('final-deaths').textContent = this.formatNumber(stats.deaths);
+        document.getElementById('final-turns').textContent = stats.turns;
+
+        modal.classList.add('active');
+    }
+
+    formatNumber(num) {
+        if (num >= 1000000000) {
+            return (num / 1000000000).toFixed(1) + 'B';
+        } else if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+        } else if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'K';
+        }
+        return num.toString();
+    }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { UIManager };
+}

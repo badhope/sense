@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pathogen Inc. - 病原体公司</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- 开始界面 -->
+        <div id="start-screen" class="screen active">
+            <div class="start-content">
+                <h1 class="game-title">
+                    <span class="title-icon">☣</span>
+                    PATHOGEN INC.
+                    <span class="title-sub">病原体公司</span>
+                </h1>
+                <p class="game-intro">扮演致命病原体，征服全世界！</p>
+                <button id="start-btn" class="btn-primary">开始游戏</button>
+            </div>
+        </div>
+
+        <!-- 病原体选择界面 -->
+        <div id="pathogen-select" class="screen">
+            <div class="select-content">
+                <h2>选择你的病原体</h2>
+                <div class="pathogen-cards">
+                    <div class="pathogen-card" data-type="bacteria">
+                        <div class="pathogen-icon bacteria-icon">🦠</div>
+                        <h3>细菌</h3>
+                        <p>适应性强，可快速进化抗药性</p>
+                        <div class="pathogen-stats">
+                            <span>传播: ★★★</span>
+                            <span>致命: ★★☆</span>
+                            <span>抗性: ★★★</span>
+                        </div>
+                    </div>
+                    <div class="pathogen-card" data-type="virus">
+                        <div class="pathogen-icon virus-icon">🦠</div>
+                        <h3>病毒</h3>
+                        <p>变异迅速，难以被疫苗克制</p>
+                        <div class="pathogen-stats">
+                            <span>传播: ★★☆</span>
+                            <span>致命: ★★★</span>
+                            <span>抗性: ★★☆</span>
+                        </div>
+                    </div>
+                    <div class="pathogen-card" data-type="parasite">
+                        <div class="pathogen-icon parasite-icon">🦠</div>
+                        <h3>寄生虫</h3>
+                        <p>存活持久，症状难以察觉</p>
+                        <div class="pathogen-stats">
+                            <span>传播: ★☆☆</span>
+                            <span>致命: ★★★</span>
+                            <span>抗性: ★★★</span>
+                        </div>
+                    </div>
+                </div>
+                <button id="confirm-pathogen" class="btn-primary" disabled>选择病原体</button>
+            </div>
+        </div>
+
+        <!-- 主游戏界面 -->
+        <div id="game-screen" class="screen">
+            <!-- 顶部信息栏 -->
+            <header class="game-header">
+                <div class="header-left">
+                    <div class="pathogen-info">
+                        <span id="pathogen-name" class="pathogen-display"></span>
+                        <span id="pathogen-type"></span>
+                    </div>
+                </div>
+                <div class="header-center">
+                    <div class="dna-display">
+                        <span class="dna-label">DNA</span>
+                        <span id="dna-value">0</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="infection-progress">
+                        <span class="progress-label">全球感染</span>
+                        <div class="progress-bar">
+                            <div id="infection-fill" class="progress-fill"></div>
+                        </div>
+                        <span id="infection-percent">0%</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 主游戏区域 -->
+            <main class="game-main">
+                <!-- 左侧：世界地图 -->
+                <section class="map-section">
+                    <div class="map-container">
+                        <svg id="world-map" viewBox="0 0 800 400">
+                            <!-- 国家区域将由JS生成 -->
+                        </svg>
+                        <div class="map-overlay">
+                            <div id="map-legend">
+                                <span class="legend-item"><span class="legend-color healthy"></span>未感染</span>
+                                <span class="legend-item"><span class="legend-color infected"></span>感染中</span>
+                                <span class="legend-item"><span class="legend-color collapsed"></span>沦陷</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 右侧：控制面板 -->
+                <aside class="control-panel">
+                    <div class="panel-tabs">
+                        <button class="tab-btn active" data-tab="evolution">进化</button>
+                        <button class="tab-btn" data-tab="symptoms">症状</button>
+                        <button class="tab-btn" data-tab="abilities">能力</button>
+                    </div>
+
+                    <div class="panel-content">
+                        <!-- 进化标签页 -->
+                        <div id="tab-evolution" class="tab-content active">
+                            <h4>传播途径</h4>
+                            <div class="upgrade-list" id="transmission-list">
+                                <!-- 由JS生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 症状标签页 -->
+                        <div id="tab-symptoms" class="tab-content">
+                            <h4>症状进化</h4>
+                            <div class="upgrade-list" id="symptoms-list">
+                                <!-- 由JS生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 能力标签页 -->
+                        <div id="tab-abilities" class="tab-content">
+                            <h4>特殊能力</h4>
+                            <div class="upgrade-list" id="abilities-list">
+                                <!-- 由JS生成 -->
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </main>
+
+            <!-- 底部信息栏 -->
+            <footer class="game-footer">
+                <div class="footer-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">总人口</span>
+                        <span id="total-population">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">已感染</span>
+                        <span id="infected-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">已死亡</span>
+                        <span id="dead-count">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">治愈率</span>
+                        <span id="cure-rate">0%</span>
+                    </div>
+                </div>
+                <div class="footer-events" id="event-log">
+                    <!-- 事件日志 -->
+                </div>
+            </footer>
+        </div>
+
+        <!-- 游戏结束弹窗 -->
+        <div id="game-over-modal" class="modal">
+            <div class="modal-content">
+                <h2 id="modal-title">游戏结束</h2>
+                <p id="modal-message"></p>
+                <div class="modal-stats">
+                    <div class="stat-row">
+                        <span>感染国家:</span>
+                        <span id="final-countries">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>死亡人数:</span>
+                        <span id="final-deaths">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>游戏回合:</span>
+                        <span id="final-turns">0</span>
+                    </div>
+                </div>
+                <button id="restart-btn" class="btn-primary">重新开始</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/country.js"></script>
+    <script src="js/pathogen.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
