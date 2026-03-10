@@ -2,6 +2,7 @@ const TRANSMISSIONS = {
     air: {
         name: '空气传播',
         desc: '通过呼吸道传播',
+        icon: '💨',
         costs: [1, 2, 3],
         effects: [0.05, 0.12, 0.25],
         maxLevel: 3
@@ -9,6 +10,7 @@ const TRANSMISSIONS = {
     water: {
         name: '水源传播',
         desc: '通过水污染传播',
+        icon: '💧',
         costs: [1, 2, 3],
         effects: [0.04, 0.10, 0.20],
         maxLevel: 3
@@ -16,6 +18,7 @@ const TRANSMISSIONS = {
     blood: {
         name: '血液传播',
         desc: '通过蚊虫叮咬传播',
+        icon: '🩸',
         costs: [1, 2, 3],
         effects: [0.04, 0.09, 0.18],
         maxLevel: 3
@@ -23,6 +26,7 @@ const TRANSMISSIONS = {
     contact: {
         name: '接触传播',
         desc: '通过身体接触传播',
+        icon: '🤝',
         costs: [1, 2, 3],
         effects: [0.03, 0.08, 0.15],
         maxLevel: 3
@@ -30,6 +34,7 @@ const TRANSMISSIONS = {
     animal: {
         name: '动物传播',
         desc: '通过动物宿主传播',
+        icon: '🦟',
         costs: [2, 3, 4],
         effects: [0.03, 0.07, 0.12],
         maxLevel: 3
@@ -40,6 +45,7 @@ const SYMPTOMS = {
     cough: {
         name: '咳嗽',
         desc: '轻微咳嗽，增加传染风险',
+        icon: '😷',
         cost: 1,
         infectBonus: 0.02,
         lethality: 0.01,
@@ -48,6 +54,7 @@ const SYMPTOMS = {
     fever: {
         name: '发烧',
         desc: '发烧加速病毒传播',
+        icon: '🌡️',
         cost: 2,
         infectBonus: 0.05,
         lethality: 0.02,
@@ -56,6 +63,7 @@ const SYMPTOMS = {
     vomiting: {
         name: '呕吐',
         desc: '呕吐物增加传播途径',
+        icon: '🤮',
         cost: 2,
         infectBonus: 0.04,
         lethality: 0.03,
@@ -64,6 +72,7 @@ const SYMPTOMS = {
     bleeding: {
         name: '出血',
         desc: '严重症状，高致命率',
+        icon: '🩹',
         cost: 3,
         infectBonus: 0.03,
         lethality: 0.08,
@@ -72,6 +81,7 @@ const SYMPTOMS = {
     immunity: {
         name: '免疫抑制',
         desc: '破坏人体免疫系统',
+        icon: '💀',
         cost: 4,
         infectBonus: 0.05,
         lethality: 0.10,
@@ -80,6 +90,7 @@ const SYMPTOMS = {
     organ: {
         name: '器官衰竭',
         desc: '致命症状，全球恐慌',
+        icon: '☠️',
         cost: 5,
         infectBonus: 0.08,
         lethality: 0.20,
@@ -91,6 +102,7 @@ const ABILITIES = {
     coldResistance: {
         name: '抗寒性',
         desc: '适应寒冷气候国家',
+        icon: '❄️',
         cost: 3,
         requiredTransmissions: 1,
         regions: ['eu', 'na', 'ru']
@@ -98,6 +110,7 @@ const ABILITIES = {
     heatResistance: {
         name: '抗热性',
         desc: '适应炎热气候国家',
+        icon: '🔥',
         cost: 3,
         requiredTransmissions: 1,
         regions: ['as', 'af', 'sa']
@@ -105,6 +118,7 @@ const ABILITIES = {
     drugResistance: {
         name: '抗药性',
         desc: '降低药物治疗效果',
+        icon: '💊',
         cost: 4,
         requiredTransmissions: 2,
         regions: []
@@ -112,7 +126,24 @@ const ABILITIES = {
     mutation: {
         name: '快速变异',
         desc: '增加随机变异概率',
+        icon: '🧬',
         cost: 5,
+        requiredTransmissions: 2,
+        regions: []
+    },
+    stealth: {
+        name: '潜伏期',
+        desc: '感染初期难以被发现',
+        icon: '👻',
+        cost: 4,
+        requiredTransmissions: 1,
+        regions: []
+    },
+    resistance: {
+        name: '环境抗性',
+        desc: '对各种环境更具适应性',
+        icon: '🛡️',
+        cost: 3,
         requiredTransmissions: 2,
         regions: []
     }
@@ -127,7 +158,8 @@ const PATHOGEN_TYPES = {
         spreadRate: 1.0,
         lethality: 0.02,
         resistance: 3,
-        description: '适应性强，可快速进化抗药性'
+        description: '适应性强，可快速进化抗药性',
+        color: '#22c55e'
     },
     virus: {
         name: '病毒',
@@ -137,7 +169,8 @@ const PATHOGEN_TYPES = {
         spreadRate: 1.2,
         lethality: 0.03,
         resistance: 2,
-        description: '变异迅速，难以被疫苗克制'
+        description: '变异迅速，难以被疫苗克制',
+        color: '#ef4444'
     },
     parasite: {
         name: '寄生虫',
@@ -147,7 +180,30 @@ const PATHOGEN_TYPES = {
         spreadRate: 0.8,
         lethality: 0.04,
         resistance: 3,
-        description: '存活持久，症状难以察觉'
+        description: '存活持久，症状难以察觉',
+        color: '#a855f7'
+    },
+    fungus: {
+        name: '真菌',
+        type: 'fungus',
+        baseTransmission: 'air',
+        baseSymptom: 'cough',
+        spreadRate: 0.7,
+        lethality: 0.03,
+        resistance: 4,
+        description: '生命力顽强，难以消灭',
+        color: '#f97316'
+    },
+    prion: {
+        name: '朊病毒',
+        type: 'prion',
+        baseTransmission: 'contact',
+        baseSymptom: 'immunity',
+        spreadRate: 0.5,
+        lethality: 0.15,
+        resistance: 5,
+        description: '致命性极高，几乎无药可医',
+        color: '#06b6d4'
     }
 };
 
@@ -156,6 +212,7 @@ class Pathogen {
         const config = PATHOGEN_TYPES[type];
         this.type = config.type;
         this.name = config.name;
+        this.color = config.color;
         
         this.spreadRate = config.spreadRate;
         this.baseLethality = config.lethality;
@@ -171,6 +228,7 @@ class Pathogen {
         
         this.dna = 2;
         this.turn = 0;
+        this.totalInfections = 0;
     }
 
     get totalTransmissions() {
@@ -178,7 +236,7 @@ class Pathogen {
     }
 
     get totalSymptoms() {
-        return Object.values(this.symptoms).reduce((a, b) => a + b, 0);
+        return Object.keys(this.symptoms).length;
     }
 
     get currentLethality() {
@@ -271,6 +329,10 @@ class Pathogen {
                 this.resistance += 2;
             } else if (ability === 'drugResistance') {
                 this.resistance += 3;
+            } else if (ability === 'resistance') {
+                this.resistance += 2;
+            } else if (ability === 'mutation') {
+                this.resistance += 1;
             }
             
             return true;
@@ -285,6 +347,9 @@ class Pathogen {
         }
         if (this.abilities.includes('heatResistance') && ['as', 'af', 'sa'].includes(region)) {
             bonus += 0.3;
+        }
+        if (this.abilities.includes('resistance')) {
+            bonus += 0.15;
         }
         return bonus;
     }

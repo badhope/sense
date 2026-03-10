@@ -94,7 +94,22 @@ class UIManager {
 
     updatePathogenInfo(pathogen) {
         document.getElementById('pathogen-name').textContent = pathogen.name;
-        document.getElementById('pathogen-type').textContent = pathogen.type;
+        document.getElementById('pathogen-type').textContent = this.getPathogenTypeName(pathogen.type);
+        
+        const nameEl = document.getElementById('pathogen-name');
+        nameEl.style.color = pathogen.color || 'var(--accent-green)';
+        nameEl.style.textShadow = `0 0 20px ${pathogen.color || 'var(--accent-green)'}`;
+    }
+
+    getPathogenTypeName(type) {
+        const names = {
+            bacteria: '细菌',
+            virus: '病毒',
+            parasite: '寄生虫',
+            fungus: '真菌',
+            prion: '朊病毒'
+        };
+        return names[type] || type;
     }
 
     updateDNA(dna) {
@@ -119,8 +134,23 @@ class UIManager {
         
         document.getElementById('total-population').textContent = this.formatNumber(totalPop);
         document.getElementById('infected-count').textContent = this.formatNumber(infected);
-        document.getElementById('dead-count').textContent = this.formatNumber(dead);
-        document.getElementById('cure-rate').textContent = `${Math.floor(game.cureRate * 100)}%`;
+        
+        const deadEl = document.getElementById('dead-count');
+        deadEl.textContent = this.formatNumber(dead);
+        
+        document.getElementById('cure-rate').textContent = `${Math.floor(game.cureRate * 1000)}%`;
+    }
+
+    updateTurn(turn) {
+        let turnEl = document.getElementById('turn-indicator');
+        if (!turnEl) {
+            turnEl = document.createElement('div');
+            turnEl.id = 'turn-indicator';
+            turnEl.className = 'turn-indicator';
+            turnEl.innerHTML = '回合 <span>0</span>';
+            document.getElementById('game-screen').appendChild(turnEl);
+        }
+        turnEl.querySelector('span').textContent = turn;
     }
 
     renderTransmissionList(pathogen) {
@@ -139,12 +169,12 @@ class UIManager {
             
             let levelDots = '';
             for (let i = 0; i < config.maxLevel; i++) {
-                levelDots += `<span class="level-dot ${i < currentLevel ? 'filled' : ''}"></span>`;
+                levelDots += `<span class="level-dot ${i < currentLevel ? (isMaxed ? 'gold' : 'filled') : ''}"></span>`;
             }
 
             item.innerHTML = `
                 <div class="upgrade-header">
-                    <span class="upgrade-name">${config.name}</span>
+                    <span class="upgrade-name">${config.icon || ''} ${config.name}</span>
                     <span class="upgrade-cost">${isMaxed ? 'MAX' : cost + ' DNA'}</span>
                 </div>
                 <div class="upgrade-desc">${config.desc}</div>
@@ -171,7 +201,6 @@ class UIManager {
         for (const [symptom, config] of Object.entries(SYMPTOMS)) {
             const owned = !!pathogen.symptoms[symptom];
             const canBuy = pathogen.dna >= config.cost && pathogen.canBuySymptom(symptom);
-            const locked = !owned && !canBuy && pathogen.dna < config.cost;
             const requiredText = config.requiredTransmissions > 0 ? 
                 `需要 ${config.requiredTransmissions} 个传播途径` : '';
 
@@ -180,7 +209,7 @@ class UIManager {
             
             item.innerHTML = `
                 <div class="upgrade-header">
-                    <span class="upgrade-name">${config.name}</span>
+                    <span class="upgrade-name">${config.icon || ''} ${config.name}</span>
                     <span class="upgrade-cost">${owned ? '已解锁' : config.cost + ' DNA'}</span>
                 </div>
                 <div class="upgrade-desc">${config.desc}</div>
@@ -208,7 +237,6 @@ class UIManager {
         for (const [ability, config] of Object.entries(ABILITIES)) {
             const owned = pathogen.abilities.includes(ability);
             const canBuy = pathogen.dna >= config.cost && pathogen.canBuyAbility(ability);
-            const locked = !owned && !canBuy && pathogen.dna < config.cost;
             const requiredText = config.requiredTransmissions > 0 ? 
                 `需要 ${config.requiredTransmissions} 个传播途径` : '';
 
@@ -217,7 +245,7 @@ class UIManager {
             
             item.innerHTML = `
                 <div class="upgrade-header">
-                    <span class="upgrade-name">${config.name}</span>
+                    <span class="upgrade-name">${config.icon || ''} ${config.name}</span>
                     <span class="upgrade-cost">${owned ? '已解锁' : config.cost + ' DNA'}</span>
                 </div>
                 <div class="upgrade-desc">${config.desc}</div>
@@ -263,7 +291,8 @@ class UIManager {
             group.appendChild(circle);
             group.appendChild(label);
 
-            group.addEventListener('mouseenter', () => this.showCountryTooltip(country));
+            group.addEventListener('mouseenter', (e) => this.showCountryTooltip(country, e));
+            group.addEventListener('mousemove', (e) => this.moveTooltip(e));
             group.addEventListener('mouseleave', () => this.hideCountryTooltip());
 
             svg.appendChild(group);
@@ -300,22 +329,11 @@ class UIManager {
         }
     }
 
-    showCountryTooltip(country) {
+    showCountryTooltip(country, event) {
         let tooltip = document.getElementById('country-tooltip');
         if (!tooltip) {
             tooltip = document.createElement('div');
             tooltip.id = 'country-tooltip';
-            tooltip.style.cssText = `
-                position: fixed;
-                background: rgba(26, 36, 54, 0.95);
-                border: 1px solid var(--border-color);
-                border-radius: 8px;
-                padding: 10px 15px;
-                font-size: 0.85rem;
-                pointer-events: none;
-                z-index: 1000;
-                backdrop-filter: blur(10px);
-            `;
             document.body.appendChild(tooltip);
         }
 
@@ -325,15 +343,31 @@ class UIManager {
             `${(country.deadRate * 100).toFixed(1)}%` : '0%';
 
         tooltip.innerHTML = `
-            <div style="font-weight: 600; margin-bottom: 5px; color: var(--accent-green);">${country.name}</div>
-            <div>人口: ${this.formatNumber(country.population)}</div>
-            <div>感染: ${infectedPercent}</div>
-            <div>死亡: ${deadPercent}</div>
-            <div>状态: ${this.getStatusText(country.status)}</div>
-            <div>防控: ${country.defense}%</div>
+            <div class="tooltip-header">${country.name}</div>
+            <div class="tooltip-row"><span>人口:</span><span>${this.formatNumber(country.population)}</span></div>
+            <div class="tooltip-row"><span>感染:</span><span>${infectedPercent}</span></div>
+            <div class="tooltip-row"><span>死亡:</span><span>${deadPercent}</span></div>
+            <div class="tooltip-row"><span>状态:</span><span>${this.getStatusText(country.status)}</span></div>
+            <div class="tooltip-row"><span>防控:</span><span>${country.defense}%</span></div>
         `;
 
         tooltip.style.display = 'block';
+        this.moveTooltip(event);
+    }
+
+    moveTooltip(event) {
+        const tooltip = document.getElementById('country-tooltip');
+        if (!tooltip) return;
+        
+        const x = event.clientX + 15;
+        const y = event.clientY + 15;
+        
+        const rect = tooltip.getBoundingClientRect();
+        const maxX = window.innerWidth - rect.width - 10;
+        const maxY = window.innerHeight - rect.height - 10;
+        
+        tooltip.style.left = Math.min(x, maxX) + 'px';
+        tooltip.style.top = Math.min(y, maxY) + 'px';
     }
 
     hideCountryTooltip() {
@@ -372,11 +406,11 @@ class UIManager {
         const message = document.getElementById('modal-message');
 
         if (isVictory) {
-            title.textContent = '世界已被征服！';
+            title.textContent = '🏆 世界已被征服！';
             title.className = 'victory';
             message.textContent = '恭喜！你成功让病原体感染了全世界的每一个人类！';
         } else {
-            title.textContent = '人类获胜';
+            title.textContent = '💀 人类获胜';
             title.className = 'defeat';
             message.textContent = '很遗憾，人类成功研发出疫苗并治愈了所有人...';
         }

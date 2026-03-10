@@ -2,250 +2,257 @@ class Game {
     constructor() {
         this.pathogen = null;
         this.countries = [];
-        this.isRunning = false;
-        this.turnInterval = null;
-        this.cureRate = 0;
-        this.baseCureRate = 0.001;
-        this.maxCureRate = 0.1;
         this.turn = 0;
-        this.eventTimer = 0;
-        
-        this.ui = new UIManager();
+        this.isRunning = false;
+        this.isPaused = false;
+        this.gameSpeed = 1;
+        this.cureRate = 0;
+        this.dnaPerTurn = 1;
+        this.eventLog = [];
+        this.intervalId = null;
     }
 
     init(pathogenType) {
-        CountryManager.init();
-        this.countries = CountryManager.countries;
         this.pathogen = new Pathogen(pathogenType);
-        this.isRunning = true;
+        this.countries = CountryManager.getCountries();
+        
+        const startCountry = this.countries[Math.floor(Math.random() * 3)];
+        startCountry.infected = Math.floor(startCountry.population * 0.01);
+        startCountry.status = 'infected';
+        
         this.turn = 0;
-        this.cureRate = this.baseCureRate;
-        this.eventTimer = 0;
-
+        this.isRunning = true;
+        this.isPaused = false;
+        this.cureRate = 0.001;
+        
+        this.ui = window.ui;
         this.ui.updatePathogenInfo(this.pathogen);
         this.ui.updateDNA(this.pathogen.dna);
-        this.ui.updateInfectionRate(0);
-        this.ui.updateStats(this);
+        this.ui.updateTurn(this.turn);
         this.ui.renderTransmissionList(this.pathogen);
         this.ui.renderSymptomsList(this.pathogen);
         this.ui.renderAbilitiesList(this.pathogen);
         this.ui.renderWorldMap(this.countries);
-        this.ui.addEventLog(`选择了 ${this.pathogen.name} 作为病原体`);
-
+        
         this.startGameLoop();
     }
 
-    startGameLoop() {
-        if (this.turnInterval) {
-            clearInterval(this.turnInterval);
-        }
-
-        this.turnInterval = setInterval(() => {
-            if (this.isRunning) {
-                this.gameTick();
-            }
-        }, 1500);
+    reset() {
+        this.stopGameLoop();
+        this.pathogen = null;
+        this.countries = [];
+        this.turn = 0;
+        this.isRunning = false;
+        this.cureRate = 0;
     }
 
-    gameTick() {
+    startGameLoop() {
+        const baseInterval = 3000;
+        const interval = baseInterval / this.gameSpeed;
+        
+        this.intervalId = setInterval(() => {
+            if (!this.isPaused && this.isRunning) {
+                this.nextTurn();
+            }
+        }, interval);
+    }
+
+    stopGameLoop() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+        }
+    }
+
+    setGameSpeed(speed) {
+        this.gameSpeed = speed;
+        if (this.isRunning) {
+            this.stopGameLoop();
+            this.startGameLoop();
+        }
+    }
+
+    togglePause() {
+        this.isPaused = !this.isPaused;
+        const pauseBtn = document.getElementById('pause-btn');
+        if (pauseBtn) {
+            pauseBtn.textContent = this.isPaused ? '▶️ 继续' : '⏸️ 暂停';
+        }
+    }
+
+    nextTurn() {
         this.turn++;
         this.pathogen.nextTurn();
         
-        this.spreadInfection();
-        this.applyCure();
-        this.calculateDNAGain();
-        this.handleEvents();
-        this.updateDifficulty();
+        this.updateCureRate();
+        this.spreadPathogen();
+        this.updateCountries();
+        
+        this.calculateDNA();
+        this.checkGameEnd();
         
         this.updateUI();
-        this.checkGameEnd();
+    }
 
-        if (this.turn % 10 === 0) {
-            this.ui.addEventLog(`第 ${this.turn} 回合: 全球感染率 ${(CountryManager.getGlobalInfectionRate() * 100).toFixed(1)}%`);
+    updateCureRate() {
+        const infected = CountryManager.getTotalInfected();
+        const total = CountryManager.getTotalPopulation();
+        
+        if (infected > 0) {
+            const baseCure = 0.0001;
+            const infectedFactor = Math.min(1, infected / total * 10);
+            const researchBonus = this.pathogen.totalSymptoms * 0.001;
+            
+            this.cureRate = baseCure + infectedFactor * 0.002 + researchBonus;
+            
+            if (this.pathogen.abilities.includes('drugResistance')) {
+                this.cureRate *= 0.7;
+            }
+            if (this.pathogen.abilities.includes('mutation')) {
+                this.cureRate *= 0.9;
+            }
+        } else {
+            this.cureRate = Math.min(0.5, this.cureRate * 1.5);
         }
     }
 
-    spreadInfection() {
-        const infectedCountries = this.countries.filter(c => c.infected > 0);
-        
-        infectedCountries.forEach(country => {
-            const resistanceBonus = this.pathogen.getResistanceBonus(country.region);
-            const defense = country.defense / 100;
-            const effectiveDefense = Math.max(0.05, defense - resistanceBonus);
+    spreadPathogen() {
+        this.countries.forEach(country => {
+            if (country.status === 'healthy') {
+                return;
+            }
 
-            const baseSpread = country.infected * this.pathogen.spreadMultiplier * 0.1;
-            const actualSpread = baseSpread * (1 - effectiveDefense);
-
-            if (actualSpread > 0) {
-                this.countries.forEach(target => {
-                    if (target.id !== country.id && target.status !== 'collapsed') {
-                        const transBonus = 1 + (this.pathogen.totalTransmissions * 0.1);
-                        target.infect(actualSpread * transBonus * 0.01, this.pathogen.currentLethality);
-                    }
-                });
+            if (country.status === 'infected') {
+                const resistance = country.defense / 100;
+                const spreadChance = this.pathogen.spreadMultiplier * (1 - resistance) * (1 - this.cureRate);
+                
+                const infectAmount = Math.floor(country.infected * spreadChance * 0.3);
+                country.infected += infectAmount;
+                
+                const lethality = this.pathogen.currentLethality;
+                const deadAmount = Math.floor(country.infected * lethality * 0.1);
+                country.infected -= deadAmount;
+                country.dead += deadAmount;
+                
+                if (country.infected >= country.population) {
+                    country.infected = country.population;
+                    country.status = 'collapsed';
+                    this.ui.addEventLog(`🚨 ${country.name} 已沦陷！`, 'danger');
+                } else if (country.infected > country.population * 0.5) {
+                    country.status = 'infected';
+                }
             }
         });
 
-        if (infectedCountries.length === 0) {
-            const startCountries = this.countries.slice(0, 3);
-            const spreadAmount = this.pathogen.spreadMultiplier * 10000;
-            startCountries.forEach(c => {
-                c.infect(spreadAmount, this.pathogen.currentLethality * 0.1);
-            });
-        }
-    }
-
-    applyCure() {
-        const totalInfected = CountryManager.getTotalInfected();
-        
-        if (totalInfected > 0) {
-            const drugResistance = this.pathogen.abilities.includes('drugResistance') ? 0.5 : 1;
-            
-            this.countries.forEach(country => {
-                if (country.infected > 0) {
-                    country.applyCure(this.cureRate * drugResistance, country.defense / 100);
+        const infectedCountries = this.countries.filter(c => c.infected > 0);
+        infectedCountries.forEach(infectedCountry => {
+            this.countries.forEach(targetCountry => {
+                if (targetCountry.status === 'healthy' && Math.random() < 0.15) {
+                    const resistance = targetCountry.defense / 100;
+                    const spreadChance = this.pathogen.spreadMultiplier * (1 - resistance) * 0.1;
+                    
+                    const region = targetCountry.region;
+                    const regionBonus = this.pathogen.getResistanceBonus(region);
+                    
+                    if (Math.random() < spreadChance * (1 + regionBonus)) {
+                        const initialInfect = Math.floor(targetCountry.population * 0.001);
+                        targetCountry.infected = initialInfect;
+                        targetCountry.status = 'infected';
+                        
+                        this.ui.addEventLog(`🦠 ${targetCountry.name} 出现首例感染！`, 'warning');
+                    }
                 }
             });
-        }
+        });
     }
 
-    calculateDNAGain() {
+    updateCountries() {
+        this.countries.forEach(country => {
+            country.updateStatus();
+        });
+    }
+
+    calculateDNA() {
         const infected = CountryManager.getTotalInfected();
-        const totalPop = CountryManager.getTotalPopulation();
+        const total = CountryManager.getTotalPopulation();
         
         if (infected > 0) {
-            const dnaGain = Math.floor(infected / 10000000) + 1;
-            this.pathogen.addDNA(dnaGain);
-        }
-    }
-
-    handleEvents() {
-        this.eventTimer++;
-        
-        if (this.eventTimer >= 15) {
-            this.eventTimer = 0;
-            this.triggerRandomEvent();
-        }
-    }
-
-    triggerRandomEvent() {
-        const events = [
-            {
-                name: '医疗突破',
-                effect: () => {
-                    this.cureRate = Math.min(this.maxCureRate, this.cureRate * 1.5);
-                    this.ui.addEventLog('⚠️ 医疗突破！治愈速度提升！', 'warning');
-                },
-                weight: 20
-            },
-            {
-                name: '自然灾害',
-                effect: () => {
-                    this.countries.forEach(c => {
-                        const death = Math.floor(c.population * 0.05);
-                        c.dead += Math.min(death, c.infected + c.cured);
-                    });
-                    this.ui.addEventLog('⚠️ 自然灾害爆发，部分人口死亡！', 'danger');
-                },
-                weight: 10
-            },
-            {
-                name: '防控加强',
-                effect: () => {
-                    this.countries.forEach(c => {
-                        c.defense = Math.min(100, c.defense + 5);
-                    });
-                    this.ui.addEventLog('⚠️ 各国加强防控措施！', 'warning');
-                },
-                weight: 25
-            },
-            {
-                name: '防控减弱',
-                effect: () => {
-                    this.countries.forEach(c => {
-                        c.defense = Math.max(10, c.defense - 5);
-                    });
-                    this.ui.addEventLog('✨ 某国防控出现漏洞！', 'info');
-                },
-                weight: 15
-            },
-            {
-                name: '病毒变异',
-                effect: () => {
-                    this.pathogen.resistance += 1;
-                    this.ui.addEventLog('✨ 病原体发生变异，抵抗力增强！', 'info');
-                },
-                weight: 15
+            let dnaBase = this.dnaPerTurn;
+            
+            const infectedRatio = infected / total;
+            dnaBase += Math.floor(infectedRatio * 3);
+            
+            if (this.pathogen.abilities.includes('stealth') && this.turn < 10) {
+                dnaBase += 1;
             }
-        ];
-
-        const totalWeight = events.reduce((sum, e) => sum + e.weight, 0);
-        let random = Math.random() * totalWeight;
-        
-        for (const event of events) {
-            random -= event.weight;
-            if (random <= 0) {
-                event.effect();
-                break;
-            }
+            
+            this.pathogen.addDNA(dnaBase);
         }
-    }
-
-    updateDifficulty() {
-        const infectionRate = CountryManager.getGlobalInfectionRate();
-        const progress = Math.min(1, infectionRate);
-        
-        const targetCureRate = this.baseCureRate + (this.maxCureRate - this.baseCureRate) * progress * 2;
-        this.cureRate = Math.min(this.maxCureRate, Math.max(this.cureRate, targetCureRate));
-    }
-
-    updateUI() {
-        this.ui.updateDNA(this.pathogen.dna);
-        this.ui.updateInfectionRate(CountryManager.getGlobalInfectionRate());
-        this.ui.updateStats(this);
-        this.ui.updateWorldMap(this.countries);
-        
-        this.ui.renderTransmissionList(this.pathogen);
-        this.ui.renderSymptomsList(this.pathogen);
-        this.ui.renderAbilitiesList(this.pathogen);
     }
 
     checkGameEnd() {
         const totalPop = CountryManager.getTotalPopulation();
-        const infected = CountryManager.getTotalInfected();
         const dead = CountryManager.getTotalDead();
-        const cured = this.countries.reduce((sum, c) => sum + c.cured, 0);
-        const remaining = totalPop - dead - cured;
+        const infected = CountryManager.getTotalInfected();
+        
+        if (infected === 0 && this.turn > 5) {
+            this.isRunning = false;
+            this.stopGameLoop();
+            
+            const stats = {
+                countries: this.countries.filter(c => c.status !== 'healthy').length,
+                deaths: dead,
+                turns: this.turn
+            };
+            
+            this.ui.showGameOver(false, stats);
+            return;
+        }
+        
+        const deadRatio = dead / totalPop;
+        if (deadRatio >= 0.99) {
+            this.isRunning = false;
+            this.stopGameLoop();
+            
+            const stats = {
+                countries: this.countries.length,
+                deaths: dead,
+                turns: this.turn
+            };
+            
+            this.ui.showGameOver(true, stats);
+            return;
+        }
 
-        if (infected + dead + cured >= totalPop * 0.95 || 
-            (dead >= totalPop * 0.9 && remaining < totalPop * 0.05)) {
-            this.endGame(true);
-        } else if (infected === 0 && cured > totalPop * 0.5) {
-            this.endGame(false);
+        const collapsedCountries = this.countries.filter(c => c.status === 'collapsed').length;
+        if (collapsedCountries >= this.countries.length * 0.95) {
+            this.isRunning = false;
+            this.stopGameLoop();
+            
+            const stats = {
+                countries: collapsedCountries,
+                deaths: dead,
+                turns: this.turn
+            };
+            
+            this.ui.showGameOver(true, stats);
         }
     }
 
-    endGame(isVictory) {
-        this.isRunning = false;
+    updateUI() {
+        const infected = CountryManager.getTotalInfected();
+        const total = CountryManager.getTotalPopulation();
         
-        if (this.turnInterval) {
-            clearInterval(this.turnInterval);
-            this.turnInterval = null;
-        }
-
-        const infectedCountries = CountryManager.getInfectedCountries().length;
-        const dead = CountryManager.getTotalDead();
-
-        this.ui.showGameOver(isVictory, {
-            countries: infectedCountries,
-            deaths: dead,
-            turns: this.turn
-        });
+        this.ui.updateDNA(this.pathogen.dna);
+        this.ui.updateTurn(this.turn);
+        this.ui.updateStats(this);
+        this.ui.updateInfectionRate(infected / total);
+        this.ui.updateWorldMap(this.countries);
     }
 
     buyTransmission(type) {
         if (this.pathogen.buyTransmission(type)) {
-            this.ui.addEventLog(`解锁 ${TRANSMISSIONS[type].name} 等级 ${this.pathogen.transmissions[type]}`);
+            this.ui.renderTransmissionList(this.pathogen);
             return true;
         }
         return false;
@@ -253,7 +260,8 @@ class Game {
 
     buySymptom(symptom) {
         if (this.pathogen.buySymptom(symptom)) {
-            this.ui.addEventLog(`解锁症状 ${SYMPTOMS[symptom].name}`);
+            this.ui.renderSymptomsList(this.pathogen);
+            this.ui.renderAbilitiesList(this.pathogen);
             return true;
         }
         return false;
@@ -261,33 +269,15 @@ class Game {
 
     buyAbility(ability) {
         if (this.pathogen.buyAbility(ability)) {
-            this.ui.addEventLog(`解锁能力 ${ABILITIES[ability].name}`);
+            this.ui.renderAbilitiesList(this.pathogen);
             return true;
         }
         return false;
     }
-
-    reset() {
-        if (this.turnInterval) {
-            clearInterval(this.turnInterval);
-            this.turnInterval = null;
-        }
-        
-        this.pathogen = null;
-        this.countries = [];
-        this.isRunning = false;
-        this.turn = 0;
-        this.cureRate = this.baseCureRate;
-        
-        CountryManager.reset();
-    }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+    window.ui = new UIManager();
     window.game = new Game();
-    window.game.ui.init();
+    window.ui.init();
 });
-
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { Game };
-}
