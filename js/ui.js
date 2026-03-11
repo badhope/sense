@@ -16,6 +16,7 @@ class UIManager {
         this.selectedPathogen = null;
         this.initEventListeners();
         this.initResponsiveListeners();
+        this.initMapControls();
         this.initialized = true;
     }
 
@@ -153,6 +154,90 @@ class UIManager {
                 controlPanel?.classList.remove('mobile-visible');
             }
         });
+    }
+
+    initMapControls() {
+        const svg = document.getElementById('world-map');
+        const container = document.getElementById('map-container');
+        if (!svg || !container) return;
+
+        this.mapScale = 1;
+        this.mapPanX = 0;
+        this.mapPanY = 0;
+        this.isDragging = false;
+        this.startX = 0;
+        this.startY = 0;
+
+        const zoomIn = document.getElementById('zoom-in');
+        const zoomOut = document.getElementById('zoom-out');
+        const zoomReset = document.getElementById('zoom-reset');
+
+        if (zoomIn) {
+            zoomIn.addEventListener('click', () => {
+                window.soundManager?.playClick();
+                this.zoomMap(1.2);
+            });
+        }
+
+        if (zoomOut) {
+            zoomOut.addEventListener('click', () => {
+                window.soundManager?.playClick();
+                this.zoomMap(0.8);
+            });
+        }
+
+        if (zoomReset) {
+            zoomReset.addEventListener('click', () => {
+                window.soundManager?.playClick();
+                this.resetMap();
+            });
+        }
+
+        container.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.country')) return;
+            this.isDragging = true;
+            this.startX = e.clientX - this.mapPanX;
+            this.startY = e.clientY - this.mapPanY;
+            container.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!this.isDragging) return;
+            this.mapPanX = e.clientX - this.startX;
+            this.mapPanY = e.clientY - this.startY;
+            this.applyMapTransform();
+        });
+
+        document.addEventListener('mouseup', () => {
+            this.isDragging = false;
+            container.style.cursor = 'grab';
+        });
+
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            this.zoomMap(delta);
+        }, { passive: false });
+    }
+
+    zoomMap(factor) {
+        this.mapScale *= factor;
+        this.mapScale = Math.max(0.5, Math.min(3, this.mapScale));
+        this.applyMapTransform();
+    }
+
+    resetMap() {
+        this.mapScale = 1;
+        this.mapPanX = 0;
+        this.mapPanY = 0;
+        this.applyMapTransform();
+    }
+
+    applyMapTransform() {
+        const svg = document.getElementById('world-map');
+        if (svg) {
+            svg.style.transform = `scale(${this.mapScale}) translate(${this.mapPanX / this.mapScale}px, ${this.mapPanY / this.mapScale}px)`;
+        }
     }
 
     updatePathogenInfo(pathogen) {
