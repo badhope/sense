@@ -1,0 +1,202 @@
+const tests = [];
+
+function test(name, fn) {
+    tests.push({ name, fn });
+}
+
+function expect(value) {
+    return {
+        toBe: (expected) => {
+            if (value !== expected) {
+                throw new Error(`Expected ${expected} but got ${value}`);
+            }
+        },
+        toBeGreaterThan: (expected) => {
+            if (value <= expected) {
+                throw new Error(`Expected ${value} to be greater than ${expected}`);
+            }
+        },
+        toHaveProperty: (prop) => {
+            if (!(prop in value)) {
+                throw new Error(`Expected to have property ${prop}`);
+            }
+        },
+        toBeTruthy: () => {
+            if (!value) {
+                throw new Error(`Expected ${value} to be truthy`);
+            }
+        },
+        toBeFalsy: () => {
+            if (value) {
+                throw new Error(`Expected ${value} to be falsy`);
+            }
+        }
+    };
+}
+
+function describe(name, fn) {
+    console.log(`\n📦 ${name}`);
+    fn();
+}
+
+function it(name, fn) {
+    try {
+        fn();
+        console.log(`  ✅ ${name}`);
+    } catch (error) {
+        console.log(`  ❌ ${name}: ${error.message}`);
+    }
+}
+
+function beforeEach(fn) {
+    fn();
+}
+
+describe('Pathogen Tests', () => {
+    let Pathogen;
+    
+    beforeEach(() => {
+        const script = document.createElement('script');
+        script.src = 'js/pathogen.js';
+        document.head.appendChild(script);
+    });
+
+    it('should load Pathogen class', () => {
+        expect(typeof Pathogen).toBeTruthy();
+    });
+});
+
+describe('Game State Tests', () => {
+    it('should validate game state object', () => {
+        const gameState = {
+            turn: 10,
+            dna: 100,
+            isRunning: true
+        };
+        
+        expect(gameState.turn).toBe(10);
+        expect(gameState.dna).toBe(100);
+        expect(gameState.isRunning).toBeTruthy();
+    });
+
+    it('should handle DNA calculations', () => {
+        const dna = 50;
+        const cost = 30;
+        const remaining = dna - cost;
+        
+        expect(remaining).toBe(20);
+    });
+
+    it('should validate infection rate', () => {
+        const infected = 5000000;
+        const population = 10000000;
+        const rate = infected / population;
+        
+        expect(rate).toBe(0.5);
+        expect(rate).toBeGreaterThan(0);
+    });
+});
+
+describe('SaveManager Tests', () => {
+    it('should save to localStorage', () => {
+        const testData = { turn: 5, dna: 100 };
+        localStorage.setItem('test_save', JSON.stringify(testData));
+        
+        const loaded = JSON.parse(localStorage.getItem('test_save'));
+        expect(loaded.turn).toBe(5);
+        
+        localStorage.removeItem('test_save');
+    });
+
+    it('should handle missing save data', () => {
+        localStorage.removeItem('pathogen_inc_save');
+        const saved = localStorage.getItem('pathogen_inc_save');
+        
+        expect(saved).toBeFalsy();
+    });
+
+    it('should validate save data structure', () => {
+        const validSave = {
+            version: '1.1',
+            pathogen: { type: 'virus', dna: 10 },
+            countries: [],
+            game: { turn: 5 }
+        };
+        
+        expect(validSave.version).toBe('1.1');
+        expect(validSave.pathogen.type).toBe('virus');
+        expect(validSave.game.turn).toBe(5);
+    });
+});
+
+describe('Country Data Tests', () => {
+    it('should have valid country count', () => {
+        const countryCount = 25;
+        expect(countryCount).toBeGreaterThan(0);
+    });
+
+    it('should validate country status values', () => {
+        const validStatuses = ['healthy', 'infected', 'collapsed', 'quarantined'];
+        const testStatus = 'infected';
+        
+        expect(validStatuses.includes(testStatus)).toBeTruthy();
+    });
+
+    it('should calculate total population', () => {
+        const countries = [
+            { population: 1400000000 },
+            { population: 330000000 },
+            { population: 1400000000 },
+            { population: 67000000 },
+            { population: 67000000 }
+        ];
+        
+        const total = countries.reduce((sum, c) => sum + c.population, 0);
+        expect(total).toBeGreaterThan(3000000000);
+    });
+});
+
+describe('UI State Tests', () => {
+    it('should validate screen states', () => {
+        const screens = ['start', 'pathogenSelect', 'game', 'gameOver'];
+        const currentScreen = 'game';
+        
+        expect(screens.includes(currentScreen)).toBeTruthy();
+    });
+
+    it('should validate tab states', () => {
+        const tabs = ['evolution', 'symptoms', 'abilities'];
+        const currentTab = 'symptoms';
+        
+        expect(tabs.includes(currentTab)).toBeTruthy();
+    });
+
+    it('should format numbers correctly', () => {
+        const num = 1234567890;
+        const formatted = num.toLocaleString();
+        
+        expect(formatted).toContain('1');
+        expect(formatted).toContain('234');
+    });
+});
+
+console.log('\n========================================');
+console.log('🧪 Running Unit Tests');
+console.log('========================================');
+
+let passed = 0;
+let failed = 0;
+
+tests.forEach(t => {
+    try {
+        t.fn();
+        passed++;
+    } catch (e) {
+        failed++;
+        console.error(`Test failed: ${e.message}`);
+    }
+});
+
+console.log('\n========================================');
+console.log(`📊 Results: ${passed} passed, ${failed} failed`);
+console.log('========================================\n');

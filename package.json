@@ -1,0 +1,22 @@
+{
+  "name": "pathogen-inc",
+  "version": "1.2.0",
+  "description": "A Plague Inc.-like strategy web game",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "eslint": "^8.57.0",
+    "vitest": "^1.6.0"
+  },
+  "keywords": ["game", "strategy", "plague-inc"],
+  "author": "",
+  "license": "MIT"
+}

@@ -19,26 +19,39 @@ class UIManager {
 
     initEventListeners() {
         const startBtn = document.getElementById('start-btn');
-        startBtn.addEventListener('click', () => this.showScreen('pathogenSelect'));
+        startBtn.addEventListener('click', () => {
+            window.soundManager?.playClick();
+            this.showScreen('pathogenSelect');
+        });
 
         const pathogenCards = document.querySelectorAll('.pathogen-card');
         pathogenCards.forEach(card => {
-            card.addEventListener('click', () => this.selectPathogen(card));
+            card.addEventListener('click', () => {
+                window.soundManager?.playClick();
+                this.selectPathogen(card);
+            });
         });
 
         const confirmBtn = document.getElementById('confirm-pathogen');
         confirmBtn.addEventListener('click', () => {
             if (this.selectedPathogen) {
+                window.soundManager?.playBuy();
                 this.startGame(this.selectedPathogen);
             }
         });
 
         const restartBtn = document.getElementById('restart-btn');
-        restartBtn.addEventListener('click', () => this.restartGame());
+        restartBtn.addEventListener('click', () => {
+            window.soundManager?.playClick();
+            this.restartGame();
+        });
 
         const tabBtns = document.querySelectorAll('.tab-btn');
         tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+            btn.addEventListener('click', () => {
+                window.soundManager?.playClick();
+                this.switchTab(btn.dataset.tab);
+            });
         });
     }
 
@@ -186,8 +199,11 @@ class UIManager {
             if (canBuy) {
                 item.addEventListener('click', () => {
                     if (window.game.buyTransmission(type)) {
+                        window.soundManager?.playBuy();
                         this.renderTransmissionList(window.game.pathogen);
                         this.updateDNA(window.game.pathogen.dna);
+                    } else {
+                        window.soundManager?.playError();
                     }
                 });
             }
@@ -221,9 +237,12 @@ class UIManager {
             if (canBuy) {
                 item.addEventListener('click', () => {
                     if (window.game.buySymptom(symptom)) {
+                        window.soundManager?.playMutation();
                         this.renderSymptomsList(window.game.pathogen);
                         this.renderAbilitiesList(window.game.pathogen);
                         this.updateDNA(window.game.pathogen.dna);
+                    } else {
+                        window.soundManager?.playError();
                     }
                 });
             }
@@ -257,8 +276,11 @@ class UIManager {
             if (canBuy) {
                 item.addEventListener('click', () => {
                     if (window.game.buyAbility(ability)) {
+                        window.soundManager?.playBuy();
                         this.renderAbilitiesList(window.game.pathogen);
                         this.updateDNA(window.game.pathogen.dna);
+                    } else {
+                        window.soundManager?.playError();
                     }
                 });
             }
@@ -306,7 +328,23 @@ class UIManager {
             const group = document.querySelector(`.country[data-id="${country.id}"]`);
             if (group) {
                 const circle = group.querySelector('circle');
+                const oldStatus = circle.getAttribute('class').split(' ').find(c => 
+                    c === 'healthy' || c === 'infected' || c === 'collapsed');
+                
                 circle.setAttribute('class', this.getCountryClass(country.status));
+                
+                if (country.status !== 'healthy' && oldStatus === 'healthy') {
+                    circle.style.animation = 'none';
+                    circle.offsetHeight;
+                    circle.style.animation = 'pulseRing 1s ease-out';
+                    window.soundManager?.playInfect();
+                }
+                
+                if (country.status === 'collapsed' && oldStatus !== 'collapsed') {
+                    group.style.animation = 'none';
+                    group.offsetHeight;
+                    group.style.animation = 'shake 0.5s ease';
+                }
             }
         });
     }

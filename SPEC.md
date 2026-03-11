@@ -171,7 +171,7 @@ plague-inc-web/
 ## 5. 验收标准
 
 - [x] 游戏可正常启动，显示世界地图
-- [x] 可选择3种病原体开始游戏
+- [x] 可选择5种病原体开始游戏
 - [x] 可购买/升级传播途径
 - [x] 可进化症状
 - [x] 可强化能力
@@ -180,6 +180,10 @@ plague-inc-web/
 - [x] DNA自动获取机制工作
 - [x] 胜利/失败条件正确触发
 - [x] 响应式布局正常工作
+- [x] 存档系统（保存/加载）
+- [x] 音效系统（Web Audio API）
+- [x] 动画增强（感染动画、沦陷动画）
+- [x] 5种病原体选择
 
 ## 6. 扩展功能 (v1.1+)
 
@@ -196,6 +200,14 @@ plague-inc-web/
 - 新闻标题滚动
 - 回合指示器
 - 游戏速度控制
+- 保存/加载/暂停按钮
+
+### 6.3 音效系统
+- 点击音效
+- 购买/升级音效
+- 感染提示音效
+- 胜利/失败音乐
+- 变异音效
 
 ## 7. 技术说明
 
@@ -207,6 +219,51 @@ plague-inc-web/
 - 使用setInterval进行游戏循环
 - DOM批量更新使用innerHTML
 - SVG地图动态更新
+- requestAnimationFrame动画
+
+### 7.3 浏览器兼容
+- Chrome 90+
+- Firefox 88+
+- Safari 14+
+- Edge 90+
+- 不支持 IE11
+
+## 8. 开发工具
+
+### 8.1 构建系统
+- Vite 5.x (开发依赖)
+- esbuild 压缩
+
+### 8.2 代码规范
+- ESLint 8.x
+- 自动修复 quotes/semi
+
+### 8.3 测试
+- 浏览器端测试页面
+- Vitest 配置 (可选)
+
+## 9. 项目结构
+
+```
+pathogen-inc/
+├── index.html          # 主HTML文件
+├── css/
+│   └── style.css       # 样式文件
+├── js/
+│   ├── game.js         # 主游戏逻辑
+│   ├── pathogen.js     # 病原体类
+│   ├── country.js     # 国家类
+│   ├── ui.js           # UI控制
+│   ├── story.js        # 剧情内容
+│   ├── save.js         # 存档管理
+│   └── sound.js        # 音效系统
+├── tests/
+│   ├── browser-tests.html  # 浏览器测试
+│   └── run-tests.html      # 测试运行器
+├── package.json        # npm配置
+├── vite.config.js     # Vite配置
+├── .eslintrc.json     # ESLint配置
+└── SPEC.md            # 游戏规格文档
 
 ### 7.3 浏览器兼容
 - Chrome 90+

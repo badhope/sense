@@ -83,8 +83,82 @@ class Game {
         this.isPaused = !this.isPaused;
         const pauseBtn = document.getElementById('pause-btn');
         if (pauseBtn) {
-            pauseBtn.textContent = this.isPaused ? '▶️ 继续' : '⏸️ 暂停';
+            pauseBtn.textContent = this.isPaused ? '▶' : '⏸';
+            pauseBtn.title = this.isPaused ? '继续' : '暂停';
         }
+    }
+
+    saveGame() {
+        const gameState = {
+            pathogen: this.pathogen,
+            countries: this.countries,
+            turn: this.turn,
+            dnaPerTurn: this.dnaPerTurn,
+            cureRate: this.cureRate,
+            isPaused: this.isPaused,
+            gameSpeed: this.gameSpeed,
+            isRunning: this.isRunning
+        };
+        
+        const result = SaveManager.saveGame(gameState);
+        if (result.success) {
+            this.ui.addEventLog('💾 游戏已保存', 'success');
+        } else {
+            this.ui.addEventLog('❌ ' + result.message, 'error');
+        }
+        return result;
+    }
+
+    loadGame() {
+        const result = SaveManager.loadGame();
+        
+        if (!result.success) {
+            this.ui.addEventLog('❌ ' + result.message, 'error');
+            return result;
+        }
+        
+        const data = result.data;
+        
+        this.pathogen = new Pathogen(data.pathogen.type);
+        this.pathogen.dna = data.pathogen.dna;
+        this.pathogen.transmissions = data.pathogen.transmissions;
+        this.pathogen.symptoms = data.pathogen.symptoms;
+        this.pathogen.abilities = data.pathogen.abilities;
+        this.pathogen.turn = data.pathogen.turn;
+        
+        this.countries = CountryManager.getCountries();
+        this.countries.forEach(country => {
+            const saved = data.countries.find(sc => sc.id === country.id);
+            if (saved) {
+                country.infected = saved.infected;
+                country.dead = saved.dead;
+                country.status = saved.status;
+                country.defense = saved.defense;
+            }
+        });
+        
+        this.turn = data.game.turn;
+        this.dnaPerTurn = data.game.dnaPerTurn;
+        this.cureRate = data.game.cureRate;
+        this.gameSpeed = data.game.gameSpeed;
+        this.isRunning = data.game.isRunning;
+        this.isPaused = data.game.isPaused;
+        
+        this.ui.updatePathogenInfo(this.pathogen);
+        this.ui.updateDNA(this.pathogen.dna);
+        this.ui.updateTurn(this.turn);
+        this.ui.renderTransmissionList(this.pathogen);
+        this.ui.renderSymptomsList(this.pathogen);
+        this.ui.renderAbilitiesList(this.pathogen);
+        this.ui.renderWorldMap(this.countries);
+        
+        if (this.isRunning && !this.isPaused) {
+            this.startGameLoop();
+        }
+        
+        this.ui.addEventLog('📂 游戏已加载 - 第' + this.turn + '回合', 'success');
+        
+        return result;
     }
 
     startNewsScroll() {
@@ -328,17 +402,17 @@ class Game {
         const infectedRatio = infected / total;
         
         if (this.turn === 5 && infectedRatio > 0) {
-            this.ui.addEventLog("📢 世界卫生组织召开紧急会议...", 'info');
+            this.ui.addEventLog('📢 世界卫生组织召开紧急会议...', 'info');
         }
         
         if (this.turn === 10 && infectedRatio > 0.01) {
-            this.ui.addEventLog("📢 全球大流行预警！", 'warning');
+            this.ui.addEventLog('📢 全球大流行预警！', 'warning');
             const message = this.storyManager.getEventMessage('world', 'pandemic');
             this.ui.addEventLog(message, 'warning');
         }
         
         if (this.turn === 20 && infectedRatio > 0.1) {
-            this.ui.addEventLog("📢 多国开始实施封城措施", 'danger');
+            this.ui.addEventLog('📢 多国开始实施封城措施', 'danger');
         }
         
         if (this.turn === 50 && infectedRatio > 0.3) {
@@ -392,4 +466,42 @@ window.addEventListener('DOMContentLoaded', () => {
     window.ui = new UIManager();
     window.game = new Game();
     window.ui.init();
+
+    window.soundManager.init();
+
+    const saveBtn = document.getElementById('save-btn');
+    const loadBtn = document.getElementById('load-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            if (window.game && window.game.isRunning) {
+                window.game.saveGame();
+            } else {
+                window.ui?.addEventLog('❌ 请先开始游戏', 'error');
+            }
+        });
+    }
+
+    if (loadBtn) {
+        loadBtn.addEventListener('click', () => {
+            if (window.game) {
+                if (window.game.isRunning) {
+                    if (confirm('加载存档将覆盖当前进度，是否继续？')) {
+                        window.game.loadGame();
+                    }
+                } else {
+                    window.game.loadGame();
+                }
+            }
+        });
+    }
+
+    if (pauseBtn) {
+        pauseBtn.addEventListener('click', () => {
+            if (window.game && window.game.isRunning) {
+                window.game.togglePause();
+            }
+        });
+    }
 });

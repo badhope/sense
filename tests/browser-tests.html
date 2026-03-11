@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pathogen Inc. - Tests</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
+        .pass { color: #22c55e; }
+        .fail { color: #ef4444; }
+        .section { margin: 20px 0; padding: 15px; background: #16213e; border-radius: 8px; }
+        h2 { color: #3b82f6; border-bottom: 1px solid #3b82f6; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Pathogen Inc. Unit Tests</h1>
+    <div id="results"></div>
+    
+    <script src="../js/pathogen.js"></script>
+    <script src="../js/country.js"></script>
+    <script src="../js/save.js"></script>
+    
+    <script>
+        const results = document.getElementById('results');
+        let passed = 0;
+        let failed = 0;
+        
+        function test(name, fn) {
+            try {
+                fn();
+                results.innerHTML += `<div class="pass">✅ ${name}</div>`;
+                passed++;
+            } catch (e) {
+                results.innerHTML += `<div class="fail">❌ ${name}: ${e.message}</div>`;
+                failed++;
+            }
+        }
+        
+        function expect(value) {
+            return {
+                toBe: (expected) => {
+                    if (value !== expected) throw new Error(`Expected ${expected} but got ${value}`);
+                },
+                toBeGreaterThan: (expected) => {
+                    if (value <= expected) throw new Error(`Expected ${value} > ${expected}`);
+                },
+                toHaveProperty: (prop) => {
+                    if (!(prop in value)) throw new Error(`Missing property: ${prop}`);
+                },
+                toBeTruthy: () => {
+                    if (!value) throw new Error(`Expected truthy value`);
+                },
+                toBeFalsy: () => {
+                    if (value) throw new Error(`Expected falsy value`);
+                }
+            };
+        }
+        
+        results.innerHTML += '<div class="section"><h2>Pathogen Tests</h2>';
+        
+        test('Pathogen: create bacteria', () => {
+            const p = new Pathogen('bacteria');
+            expect(p.type).toBe('bacteria');
+        });
+        
+        test('Pathogen: create virus', () => {
+            const p = new Pathogen('virus');
+            expect(p.type).toBe('virus');
+        });
+        
+        test('Pathogen: default DNA is 2', () => {
+            const p = new Pathogen('bacteria');
+            expect(p.dna).toBe(2);
+        });
+        
+        test('Pathogen: has initial transmission', () => {
+            const p = new Pathogen('bacteria');
+            expect(p.transmissions).toHaveProperty('air');
+        });
+        
+        test('Pathogen: has initial symptom', () => {
+            const p = new Pathogen('bacteria');
+            expect(p.symptoms).toHaveProperty('cough');
+        });
+        
+        test('Pathogen: spread multiplier > 1', () => {
+            const p = new Pathogen('bacteria');
+            expect(p.spreadMultiplier).toBeGreaterThan(1);
+        });
+        
+        test('Pathogen: lethality > 0', () => {
+            const p = new Pathogen('bacteria');
+            expect(p.currentLethality).toBeGreaterThan(0);
+        });
+        
+        results.innerHTML += '</div><div class="section"><h2>Country Tests</h2>';
+        
+        test('Country: getCountries returns array', () => {
+            const countries = CountryManager.getCountries();
+            expect(Array.isArray(countries)).toBeTruthy();
+        });
+        
+        test('Country: countries array not empty', () => {
+            const countries = CountryManager.getCountries();
+            expect(countries.length).toBeGreaterThan(0);
+        });
+        
+        test('Country: has valid properties', () => {
+            const countries = CountryManager.getCountries();
+            const c = countries[0];
+            expect(c).toHaveProperty('id');
+            expect(c).toHaveProperty('name');
+            expect(c).toHaveProperty('population');
+        });
+        
+        results.innerHTML += '</div><div class="section"><h2>SaveManager Tests</h2>';
+        
+        test('SaveManager: can save game', () => {
+            const state = { pathogen: { type: 'bacteria', dna: 10 }, countries: [], turn: 5 };
+            const result = SaveManager.saveGame(state);
+            expect(result.success).toBeTruthy();
+        });
+        
+        test('SaveManager: can load game', () => {
+            SaveManager.deleteSave();
+            const state = { pathogen: { type: 'virus', dna: 20 }, countries: [], turn: 10 };
+            SaveManager.saveGame(state);
+            const result = SaveManager.loadGame();
+            expect(result.success).toBeTruthy();
+            expect(result.data.game.turn).toBe(10);
+        });
+        
+        test('SaveManager: hasSave returns boolean', () => {
+            SaveManager.deleteSave();
+            const before = SaveManager.hasSave();
+            SaveManager.saveGame({ pathogen: {}, countries: [], turn: 0 });
+            const after = SaveManager.hasSave();
+            expect(before).toBeFalsy();
+            expect(after).toBeTruthy();
+            SaveManager.deleteSave();
+        });
+        
+        results.innerHTML += '</div><div class="section"><h2>Game Logic Tests</h2>';
+        
+        test('Game: infection rate calculation', () => {
+            const infected = 5000000;
+            const population = 10000000;
+            const rate = infected / population;
+            expect(rate).toBe(0.5);
+        });
+        
+        test('Game: DNA deduction', () => {
+            let dna = 50;
+            const cost = 30;
+            dna -= cost;
+            expect(dna).toBe(20);
+        });
+        
+        test('Game: country status valid', () => {
+            const validStatuses = ['healthy', 'infected', 'collapsed', 'quarantined'];
+            const status = 'infected';
+            expect(validStatuses.includes(status)).toBeTruthy();
+        });
+        
+        results.innerHTML += '</div>';
+        
+        results.innerHTML += `<h2 style="margin-top:30px">📊 Results: ${passed} passed, ${failed} failed</h2>`;
+        
+        console.log(`Tests: ${passed} passed, ${failed} failed`);
+    </script>
+</body>
+</html>

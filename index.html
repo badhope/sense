@@ -59,6 +59,26 @@
                             <span>抗性: ★★★</span>
                         </div>
                     </div>
+                    <div class="pathogen-card" data-type="fungus">
+                        <div class="pathogen-icon fungus-icon">🦠</div>
+                        <h3>真菌</h3>
+                        <p>环境适应力强，全球传播迅速</p>
+                        <div class="pathogen-stats">
+                            <span>传播: ★★★</span>
+                            <span>致命: ★★☆</span>
+                            <span>抗性: ★★★</span>
+                        </div>
+                    </div>
+                    <div class="pathogen-card" data-type="prion">
+                        <div class="pathogen-icon prion-icon">🦠</div>
+                        <h3>朊病毒</h3>
+                        <p>无法治愈，致命性极高</p>
+                        <div class="pathogen-stats">
+                            <span>传播: ★☆☆</span>
+                            <span>致命: ★★★</span>
+                            <span>抗性: ★★★</span>
+                        </div>
+                    </div>
                 </div>
                 <button id="confirm-pathogen" class="btn-primary" disabled>选择病原体</button>
             </div>
@@ -88,6 +108,11 @@
                             <div id="infection-fill" class="progress-fill"></div>
                         </div>
                         <span id="infection-percent">0%</span>
+                    </div>
+                    <div class="game-controls">
+                        <button id="save-btn" class="control-btn" title="保存游戏">💾</button>
+                        <button id="load-btn" class="control-btn" title="加载游戏">📂</button>
+                        <button id="pause-btn" class="control-btn" title="暂停/继续">⏸</button>
                     </div>
                 </div>
             </header>
@@ -199,6 +224,8 @@
     <script src="js/country.js"></script>
     <script src="js/pathogen.js"></script>
     <script src="js/story.js"></script>
+    <script src="js/save.js"></script>
+    <script src="js/sound.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/game.js"></script>
 </body>
