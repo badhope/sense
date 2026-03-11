@@ -189,6 +189,11 @@ class Game {
             setTimeout(() => {
                 headlineEl.textContent = headline;
                 headlineEl.style.opacity = 1;
+                if (infectedRatio > 0.3 || this.turn > 50) {
+                    headlineEl.classList.add('emergency');
+                } else {
+                    headlineEl.classList.remove('emergency');
+                }
             }, 300);
         }
     }

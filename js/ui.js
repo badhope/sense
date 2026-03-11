@@ -3,6 +3,7 @@ class UIManager {
         this.screens = {};
         this.selectedPathogen = null;
         this.initialized = false;
+        this.isMobile = window.innerWidth <= 768;
     }
 
     init() {
@@ -14,6 +15,7 @@ class UIManager {
         
         this.selectedPathogen = null;
         this.initEventListeners();
+        this.initResponsiveListeners();
         this.initialized = true;
     }
 
@@ -105,6 +107,52 @@ class UIManager {
             content.classList.remove('active');
         });
         document.getElementById(`tab-${tabName}`).classList.add('active');
+    }
+
+    initResponsiveListeners() {
+        const collapsePanelBtn = document.getElementById('collapse-panel');
+        const controlPanel = document.getElementById('control-panel');
+        if (collapsePanelBtn && controlPanel) {
+            collapsePanelBtn.addEventListener('click', () => {
+                window.soundManager?.playClick();
+                controlPanel.classList.toggle('collapsed');
+            });
+        }
+
+        const toggleStatsBtn = document.getElementById('toggle-stats');
+        const statsPanel = document.getElementById('stats-panel');
+        if (toggleStatsBtn && statsPanel) {
+            toggleStatsBtn.addEventListener('click', () => {
+                window.soundManager?.playClick();
+                statsPanel.classList.toggle('collapsed');
+            });
+        }
+
+        const toggleEventsBtn = document.getElementById('toggle-events');
+        const eventLogContainer = document.querySelector('.event-log-container');
+        if (toggleEventsBtn && eventLogContainer) {
+            toggleEventsBtn.addEventListener('click', () => {
+                window.soundManager?.playClick();
+                eventLogContainer.classList.toggle('collapsed');
+                const isCollapsed = eventLogContainer.classList.contains('collapsed');
+                toggleEventsBtn.textContent = isCollapsed ? '事件日志 ▲' : '事件日志 ▼';
+            });
+        }
+
+        const menuToggle = document.getElementById('menu-toggle');
+        if (menuToggle && this.isMobile) {
+            menuToggle.addEventListener('click', () => {
+                window.soundManager?.playClick();
+                controlPanel.classList.toggle('mobile-visible');
+            });
+        }
+
+        window.addEventListener('resize', () => {
+            this.isMobile = window.innerWidth <= 768;
+            if (!this.isMobile) {
+                controlPanel?.classList.remove('mobile-visible');
+            }
+        });
     }
 
     updatePathogenInfo(pathogen) {
@@ -431,12 +479,21 @@ class UIManager {
         const container = document.getElementById('event-log');
         const event = document.createElement('div');
         event.className = `event-item ${type}`;
-        event.textContent = message;
+        event.innerHTML = `<span class="event-time">${new Date().toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit', second:'2-digit'})}</span> ${message}`;
         
         container.insertBefore(event, container.firstChild);
 
         if (container.children.length > 5) {
             container.removeChild(container.lastChild);
+        }
+
+        if (type === 'danger' || type === 'warning') {
+            event.style.animation = 'eventShake 0.5s ease';
+            if (window.soundManager) {
+                window.soundManager.playPop();
+            }
+        } else if (type === 'success') {
+            event.style.animation = 'eventSlide 0.3s ease';
         }
     }
 
