@@ -352,10 +352,8 @@ body {
 .panel h4 {
     font-family: var(--font-mono);
     font-size: 0.95rem;
-    color: var(--accent-blue);
-    margin: 0 0 0.8rem 0;
     color: var(--accent-green);
-    margin-bottom: 1rem;
+    margin: 0 0 1rem 0;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -471,8 +469,5 @@ body {
     
     .text-container {
         padding: 1rem;
-    }
-}
-        overflow-y: auto;
     }
 }
