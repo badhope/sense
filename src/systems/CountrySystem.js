@@ -197,10 +197,10 @@ class CountrySystem {
             healthyCountries.forEach(healthy => {
                 if (this.areNeighboring(infected, healthy)) {
                     if (Math.random() < spreadChance) {
-                        const initialInfected = Math.floor(infected.infected * 0.01);
-                        if (initialInfected > 0) {
-                            healthy.infected = initialInfected;
-                        }
+                        const initialInfected = Math.max(1, Math.floor(infected.infected * 0.01));
+                        // 确保不会超过健康人口
+                        const maxInfected = Math.max(0, healthy.population - healthy.infected - healthy.dead);
+                        healthy.infected = Math.min(initialInfected, maxInfected);
                     }
                 }
             });

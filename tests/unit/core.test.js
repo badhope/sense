@@ -4,6 +4,40 @@ import SaveManager from '../../src/core/SaveManager.js';
 import PathogenSystem from '../../src/systems/PathogenSystem.js';
 import CountrySystem, { Country } from '../../src/systems/CountrySystem.js';
 
+// Mock localStorage for Node environment
+class LocalStorageMock {
+    constructor() {
+        this.store = {};
+    }
+
+    clear() {
+        this.store = {};
+    }
+
+    getItem(key) {
+        return this.store[key] || null;
+    }
+
+    setItem(key, value) {
+        this.store[key] = String(value);
+    }
+
+    removeItem(key) {
+        delete this.store[key];
+    }
+
+    key(index) {
+        const keys = Object.keys(this.store);
+        return keys[index] || null;
+    }
+
+    get length() {
+        return Object.keys(this.store).length;
+    }
+}
+
+global.localStorage = new LocalStorageMock();
+
 describe('GameState', () => {
     let gameState;
 
@@ -79,8 +113,9 @@ describe('SaveManager', () => {
         const loadResult = saveManager.loadGame();
         
         expect(loadResult.success).toBe(true);
+        // loadResult.data 包含完整的存档结构
         expect(loadResult.data.turn).toBe(10);
-        expect(loadResult.data.pathogen.dna).toBe(50);
+        expect(loadResult.data.data.pathogen.dna).toBe(50);
     });
 
     it('should check if save exists', () => {

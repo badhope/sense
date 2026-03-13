@@ -44,6 +44,14 @@ class GameEngine {
         this.listeners.gameStateChange = [];
         this.listeners.turnEnd = [];
         this.listeners.choice = [];
+        this.listeners.gameStart = [];
+        this.listeners.gameStop = [];
+        this.listeners.gamePause = [];
+        this.listeners.gameResume = [];
+        this.listeners.cureComplete = [];
+        this.listeners.victory = [];
+        this.listeners.defeat = [];
+        this.listeners.eventTriggered = [];
     }
     
     on(event, callback) {

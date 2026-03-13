@@ -100,6 +100,11 @@ class Game {
             '5': 'prion'
         };
         
+        if (cmd === 'back' || cmd === '返回') {
+            this.showStartScreen();
+            return;
+        }
+        
         const selected = typeMap[cmd] || pathogenTypes.find(p => p.includes(cmd));
         
         if (selected && this.pathogenSystem.pathogenTypes[selected]) {
@@ -428,9 +433,11 @@ class Game {
     }
     
     showEvent(event) {
+        if (!event) return;
+        
         this.renderer.render('');
-        this.renderer.render(`[事件] ${event.title}`, { type: 'warning' });
-        this.renderer.render(event.description);
+        this.renderer.render(`[事件] ${event.title || '未知事件'}`, { type: 'warning' });
+        this.renderer.render(event.description || '');
         this.renderer.render('');
     }
 }

@@ -39,11 +39,14 @@ class InputHandler {
     }
     
     handleCommand(command) {
-        this.commandHistory.push(command);
+        // 简单的 XSS 防护：过滤 HTML 标签
+        const sanitized = command.replace(/<[^>]*>/g, '');
+        
+        this.commandHistory.push(sanitized);
         this.historyIndex = this.commandHistory.length;
         
         if (this.callbacks.onCommand) {
-            this.callbacks.onCommand(command);
+            this.callbacks.onCommand(sanitized);
         }
     }
     

@@ -154,7 +154,13 @@ class TextRenderer {
             const button = document.createElement('button');
             button.className = 'choice-btn';
             button.innerHTML = `${index + 1}. ${choice.text}`;
-            button.onclick = () => onSelect(index, choice);
+            button.onclick = () => {
+                onSelect(index, choice);
+                // 点击后移除选择容器，防止堆积
+                if (choicesContainer.parentNode) {
+                    choicesContainer.parentNode.removeChild(choicesContainer);
+                }
+            };
             choicesContainer.appendChild(button);
         });
         

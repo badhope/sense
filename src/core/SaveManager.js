@@ -167,6 +167,7 @@ class SaveManager {
     verifyChecksum(saveData) {
         const checksum = saveData.checksum;
         const data = saveData.data;
+        // data 已经是字符串，直接使用
         const calculatedChecksum = this.generateChecksum(JSON.parse(data));
         return checksum === calculatedChecksum;
     }

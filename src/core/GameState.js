@@ -82,16 +82,25 @@ class GameState {
             version: '2.0.0',
             timestamp: Date.now(),
             turn: this.turn,
+            startTime: this.startTime,
+            gameSpeed: this.gameSpeed,
             data: {
                 pathogen: this.pathogen,
                 countries: this.countries,
+                globalInfected: this.globalInfected,
+                globalDead: this.globalDead,
+                totalPopulation: this.totalPopulation,
                 cureProgress: this.cureProgress,
+                cureRate: this.cureRate,
                 globalPanic: this.globalPanic,
+                travelRestrictions: this.travelRestrictions,
+                economicImpact: this.economicImpact,
                 currentStoryNode: this.currentStoryNode,
                 visitedNodes: this.visitedNodes,
                 choices: this.choices,
                 achievements: this.achievements,
-                eventLog: this.eventLog
+                eventLog: this.eventLog,
+                newsFeed: this.newsFeed
             }
         };
     }
