@@ -16,9 +16,15 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true
+    open: true,
+    host: true
   },
   preview: {
     port: 4173
+  },
+  test: {
+    globals: true,
+    environment: 'node',
+    include: ['tests/**/*.test.js']
   }
 });

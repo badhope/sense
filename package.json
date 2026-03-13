@@ -1,22 +1,37 @@
 {
-  "name": "pathogen-inc",
-  "version": "1.2.0",
-  "description": "A Plague Inc.-like strategy web game",
+  "name": "pathogen-inc-text",
+  "version": "2.0.0",
+  "description": "Pathogen Inc. - A text-based interactive strategy game",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:performance": "vitest run tests/performance"
   },
   "devDependencies": {
-    "vite": "^5.4.0",
-    "eslint": "^8.57.0",
-    "vitest": "^1.6.0"
+    "vite": "5.4.0",
+    "vitest": "1.6.0",
+    "eslint": "8.57.0",
+    "@vitest/coverage-v8": "1.6.0"
   },
-  "keywords": ["game", "strategy", "plague-inc"],
+  "dependencies": {
+    "marked": "9.1.6"
+  },
+  "keywords": [
+    "game",
+    "strategy",
+    "text-adventure",
+    "interactive-fiction"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
