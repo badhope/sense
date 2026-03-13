@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试测试页面</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .test-result {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .test-pass {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+        }
+        .test-fail {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+        .test-info {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div style="padding: 2rem;">
+            <h1>调试测试页面</h1>
+            <div id="test-results"></div>
+            
+            <div style="margin-top: 2rem;">
+                <h2>交互测试</h2>
+                <button id="test-btn" class="action-btn">测试按钮</button>
+                <div id="test-output" style="margin-top: 1rem;"></div>
+            </div>
+            
+            <div style="margin-top: 2rem;">
+                <h2>样式测试</h2>
+                <div class="text-element text-title"><h2>标题样式</h2></div>
+                <div class="text-element text-system">系统消息样式</div>
+                <div class="text-element text-error">错误消息样式</div>
+                <div class="text-element text-success">成功消息样式</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const results = document.getElementById('test-results');
+        const tests = [];
+        
+        function addTest(name, passed, message) {
+            tests.push({ name, passed, message });
+            const div = document.createElement('div');
+            div.className = `test-result ${passed ? 'test-pass' : 'test-fail'}`;
+            div.innerHTML = `<strong>${name}:</strong> ${passed ? '✅ 通过' : '❌ 失败'} - ${message}`;
+            results.appendChild(div);
+        }
+        
+        // 测试 1: DOM 加载
+        addTest(
+            'DOM 加载',
+            document.readyState === 'complete' || document.readyState === 'interactive',
+            `当前状态：${document.readyState}`
+        );
+        
+        // 测试 2: CSS 加载
+        const testDiv = document.createElement('div');
+        testDiv.className = 'action-btn';
+        document.body.appendChild(testDiv);
+        const style = window.getComputedStyle(testDiv);
+        const cssLoaded = style.cursor === 'pointer' && style.borderRadius === '4px';
+        document.body.removeChild(testDiv);
+        addTest(
+            'CSS 样式加载',
+            cssLoaded,
+            `按钮样式：cursor=${style.cursor}, borderRadius=${style.borderRadius}`
+        );
+        
+        // 测试 3: 元素查找
+        const app = document.getElementById('app');
+        addTest(
+            '元素查找 #app',
+            app !== null,
+            app ? `找到元素：${app.tagName}` : '未找到元素'
+        );
+        
+        // 测试 4: 按钮元素
+        const testBtn = document.getElementById('test-btn');
+        addTest(
+            '测试按钮存在',
+            testBtn !== null,
+            testBtn ? `找到按钮：${testBtn.textContent}` : '未找到按钮'
+        );
+        
+        // 测试 5: 事件监听器
+        let btnClicked = false;
+        if (testBtn) {
+            testBtn.addEventListener('click', () => {
+                btnClicked = true;
+                document.getElementById('test-output').innerHTML = '<span style="color: var(--accent-green);">按钮被点击！✅</span>';
+            });
+        }
+        addTest(
+            '事件监听器绑定',
+            testBtn !== null,
+            '点击上方的测试按钮验证'
+        );
+        
+        // 测试 6: 游戏元素
+        const saveBtn = document.getElementById('save-btn');
+        addTest(
+            '保存按钮存在',
+            saveBtn !== null,
+            saveBtn ? '在主游戏中找到' : '仅在测试页面，正常'
+        );
+        
+        // 延迟测试：等待所有资源加载
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                addTest(
+                    '页面完全加载',
+                    true,
+                    '所有资源已加载完成'
+                );
+                
+                // 显示控制台信息
+                console.log('%c=== 调试测试完成 ===', 'color: #00ff88; font-size: 16px; font-weight: bold;');
+                console.log('测试结果:', tests);
+                console.log('通过率:', `${tests.filter(t => t.passed).length}/${tests.length}`);
+            }, 1000);
+        });
+        
+        // 显示控制台欢迎信息
+        console.log('%c🔍 调试测试页面已加载', 'color: #00d4ff; font-size: 14px; font-weight: bold;');
+        console.log('请查看页面上的测试结果');
+    </script>
+</body>
+</html>

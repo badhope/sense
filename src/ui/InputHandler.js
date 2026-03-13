@@ -7,13 +7,16 @@ class InputHandler {
     }
     
     init(inputId) {
+        console.log('InputHandler: Initializing with input ID:', inputId);
         this.inputElement = document.getElementById(inputId);
         if (!this.inputElement) {
-            console.error('InputHandler: Input element not found');
+            console.error('InputHandler: Input element not found:', inputId);
             return false;
         }
+        console.log('InputHandler: Input element found:', this.inputElement);
         
         this.bindEvents();
+        console.log('InputHandler: Events bound successfully');
         return true;
     }
     

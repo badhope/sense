@@ -16,18 +16,42 @@ class Game {
     }
     
     async init() {
-        console.log('Game: Initializing...');
+        console.log('=== Game: Initializing... ===');
+        console.log('Game: DOM ready, starting initialization');
         
-        this.renderer.init('game-output');
-        this.inputHandler.init('game-input');
-        
-        this.setupEventListeners();
-        this.showStartScreen();
-        
-        console.log('Game: Initialized successfully');
+        try {
+            // 初始化渲染器
+            const rendererInit = this.renderer.init('game-output');
+            if (!rendererInit) {
+                console.error('Game: Failed to initialize renderer');
+            } else {
+                console.log('Game: Renderer initialized successfully');
+            }
+            
+            // 初始化输入处理器
+            const inputInit = this.inputHandler.init('game-input');
+            if (!inputInit) {
+                console.error('Game: Failed to initialize input handler');
+            } else {
+                console.log('Game: Input handler initialized successfully');
+            }
+            
+            // 设置事件监听器
+            this.setupEventListeners();
+            
+            // 显示初始界面
+            this.showStartScreen();
+            
+            console.log('=== Game: Initialization complete ===');
+        } catch (error) {
+            console.error('Game: Initialization error:', error);
+            console.error('Game: Stack trace:', error.stack);
+        }
     }
     
     setupEventListeners() {
+        console.log('Game: Setting up event listeners...');
+        
         this.inputHandler.on('command', (command) => {
             this.handleCommand(command);
         });
@@ -45,21 +69,52 @@ class Game {
             this.showEvent(event);
         });
         
-        document.getElementById('save-btn').addEventListener('click', () => {
-            this.saveGame();
-        });
+        // 添加按钮事件监听器，带错误检查
+        const saveBtn = document.getElementById('save-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                console.log('Game: Save button clicked');
+                this.saveGame();
+            });
+            console.log('Game: Save button listener attached');
+        } else {
+            console.warn('Game: Save button not found in DOM');
+        }
         
-        document.getElementById('load-btn').addEventListener('click', () => {
-            this.loadGame();
-        });
+        const loadBtn = document.getElementById('load-btn');
+        if (loadBtn) {
+            loadBtn.addEventListener('click', () => {
+                console.log('Game: Load button clicked');
+                this.loadGame();
+            });
+            console.log('Game: Load button listener attached');
+        } else {
+            console.warn('Game: Load button not found in DOM');
+        }
         
-        document.getElementById('pause-btn').addEventListener('click', () => {
-            this.togglePause();
-        });
+        const pauseBtn = document.getElementById('pause-btn');
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => {
+                console.log('Game: Pause button clicked');
+                this.togglePause();
+            });
+            console.log('Game: Pause button listener attached');
+        } else {
+            console.warn('Game: Pause button not found in DOM');
+        }
         
-        document.getElementById('help-btn').addEventListener('click', () => {
-            this.showHelp();
-        });
+        const helpBtn = document.getElementById('help-btn');
+        if (helpBtn) {
+            helpBtn.addEventListener('click', () => {
+                console.log('Game: Help button clicked');
+                this.showHelp();
+            });
+            console.log('Game: Help button listener attached');
+        } else {
+            console.warn('Game: Help button not found in DOM');
+        }
+        
+        console.log('Game: Event listeners setup complete');
     }
     
     handleCommand(command) {

@@ -7,11 +7,20 @@ class TextRenderer {
     }
     
     init(containerId) {
+        console.log('TextRenderer: Initializing with container ID:', containerId);
         this.container = document.getElementById(containerId);
         if (!this.container) {
-            console.error('TextRenderer: Container not found');
+            console.error('TextRenderer: Container not found:', containerId);
             return false;
         }
+        console.log('TextRenderer: Container found:', this.container);
+        console.log('TextRenderer: Container has', this.container.children.length, 'children');
+        
+        // 检查样式是否加载
+        const computedStyle = window.getComputedStyle(this.container);
+        console.log('TextRenderer: Container display style:', computedStyle.display);
+        console.log('TextRenderer: Container visibility:', computedStyle.visibility);
+        
         return true;
     }
     
