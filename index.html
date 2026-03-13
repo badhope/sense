@@ -9,57 +9,75 @@
 <body>
     <div id="app">
         <header class="game-header">
-            <h1 class="game-title">PATHOGEN INC.</h1>
-            <div class="status-bar">
-                <span class="status-item">回合：<span id="turn-display">0</span></span>
-                <span class="status-item">DNA: <span id="dna-display">0</span></span>
-                <span class="status-item">感染：<span id="infected-display">0</span></span>
-                <span class="status-item">死亡：<span id="dead-display">0</span></span>
-                <span class="status-item">疫苗：<span id="cure-display">0%</span></span>
+            <div class="header-left">
+                <h1 class="game-title">PATHOGEN INC.</h1>
+                <div class="status-bar">
+                    <span class="status-item">回合：<span id="turn-display">0</span></span>
+                    <span class="status-item">DNA: <span id="dna-display">0</span></span>
+                    <span class="status-item">感染：<span id="infected-display">0</span></span>
+                    <span class="status-item">死亡：<span id="dead-display">0</span></span>
+                    <span class="status-item">疫苗：<span id="cure-display">0%</span></span>
+                </div>
+            </div>
+            
+            <div class="header-right">
+                <div class="toolbar">
+                    <button id="save-btn" class="toolbar-btn" title="保存游戏">💾 保存</button>
+                    <button id="load-btn" class="toolbar-btn" title="读取游戏">📂 读取</button>
+                    <button id="pause-btn" class="toolbar-btn" title="暂停/继续">⏸️ 暂停</button>
+                    <button id="help-btn" class="toolbar-btn" title="帮助">❓ 帮助</button>
+                    <button id="toggle-sidebar-btn" class="toolbar-btn" title="切换侧边栏">📊 面板</button>
+                </div>
             </div>
         </header>
         
-        <main class="game-main">
-            <div class="text-container">
-                <div id="game-output" class="game-output"></div>
-            </div>
-            
-            <div class="input-container">
-                <input 
-                    type="text" 
-                    id="game-input" 
-                    class="game-input" 
-                    placeholder="输入命令或选择编号..."
-                    autocomplete="off"
-                >
-            </div>
-        </main>
-        
-        <aside class="game-sidebar">
-            <div class="panel">
-                <h3>病原体信息</h3>
-                <div id="pathogen-info" class="info-panel">
-                    <p>类型：未选择</p>
+        <div class="game-container">
+            <main class="game-main">
+                <div class="text-container">
+                    <div id="game-output" class="game-output"></div>
                 </div>
-            </div>
-            
-            <div class="panel">
-                <h3>升级选项</h3>
-                <div id="upgrade-options" class="upgrade-panel">
-                    <p class="hint">输入 "upgrade" 查看可用升级</p>
+                
+                <div class="input-container">
+                    <input 
+                        type="text" 
+                        id="game-input" 
+                        class="game-input" 
+                        placeholder="输入命令或选择编号..."
+                        autocomplete="off"
+                    >
                 </div>
-            </div>
+            </main>
             
-            <div class="panel">
-                <h3>操作</h3>
-                <div class="actions-panel">
-                    <button id="save-btn" class="action-btn">保存</button>
-                    <button id="load-btn" class="action-btn">读取</button>
-                    <button id="pause-btn" class="action-btn">暂停</button>
-                    <button id="help-btn" class="action-btn">帮助</button>
+            <aside class="game-sidebar" id="game-sidebar">
+                <div class="sidebar-header">
+                    <h3>信息面板</h3>
+                    <button id="close-sidebar-btn" class="close-btn" title="关闭面板">×</button>
                 </div>
-            </div>
-        </aside>
+                
+                <div class="sidebar-content">
+                    <div class="panel">
+                        <h4>🦠 病原体信息</h4>
+                        <div id="pathogen-info" class="info-panel">
+                            <p>类型：未选择</p>
+                        </div>
+                    </div>
+                    
+                    <div class="panel">
+                        <h4>⬆️ 升级选项</h4>
+                        <div id="upgrade-options" class="upgrade-panel">
+                            <p class="hint">输入 "upgrade" 查看可用升级</p>
+                        </div>
+                    </div>
+                    
+                    <div class="panel">
+                        <h4>📊 统计信息</h4>
+                        <div id="stats-info" class="stats-panel">
+                            <p class="hint">游戏开始后显示统计</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
     </div>
     
     <script type="module" src="/src/main.js"></script>

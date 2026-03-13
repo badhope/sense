@@ -13,6 +13,7 @@ class Game {
         this.countrySystem = new CountrySystem();
         this.currentPhase = 'start';
         this.selectedPathogen = null;
+        this.sidebarCollapsed = false;
     }
     
     async init() {
@@ -112,6 +113,30 @@ class Game {
             console.log('Game: Help button listener attached');
         } else {
             console.warn('Game: Help button not found in DOM');
+        }
+        
+        // 侧边栏切换按钮
+        const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+        if (toggleSidebarBtn) {
+            toggleSidebarBtn.addEventListener('click', () => {
+                console.log('Game: Toggle sidebar clicked');
+                this.toggleSidebar();
+            });
+            console.log('Game: Toggle sidebar button listener attached');
+        } else {
+            console.warn('Game: Toggle sidebar button not found in DOM');
+        }
+        
+        // 关闭侧边栏按钮
+        const closeSidebarBtn = document.getElementById('close-sidebar-btn');
+        if (closeSidebarBtn) {
+            closeSidebarBtn.addEventListener('click', () => {
+                console.log('Game: Close sidebar button clicked');
+                this.collapseSidebar();
+            });
+            console.log('Game: Close sidebar button listener attached');
+        } else {
+            console.warn('Game: Close sidebar button not found in DOM');
         }
         
         console.log('Game: Event listeners setup complete');
@@ -445,6 +470,33 @@ class Game {
         document.getElementById('infected-display').textContent = this.countrySystem.getTotalInfected().toLocaleString();
         document.getElementById('dead-display').textContent = this.countrySystem.getTotalDead().toLocaleString();
         document.getElementById('cure-display').textContent = `${(state.cureProgress * 100).toFixed(1)}%`;
+    }
+    
+    toggleSidebar() {
+        const sidebar = document.getElementById('game-sidebar');
+        if (sidebar) {
+            this.sidebarCollapsed = !this.sidebarCollapsed;
+            sidebar.classList.toggle('collapsed', this.sidebarCollapsed);
+            console.log('Game: Sidebar toggled, collapsed:', this.sidebarCollapsed);
+        }
+    }
+    
+    collapseSidebar() {
+        const sidebar = document.getElementById('game-sidebar');
+        if (sidebar) {
+            this.sidebarCollapsed = true;
+            sidebar.classList.add('collapsed');
+            console.log('Game: Sidebar collapsed');
+        }
+    }
+    
+    expandSidebar() {
+        const sidebar = document.getElementById('game-sidebar');
+        if (sidebar) {
+            this.sidebarCollapsed = false;
+            sidebar.classList.remove('collapsed');
+            console.log('Game: Sidebar expanded');
+        }
     }
     
     saveGame() {
